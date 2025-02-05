@@ -35,6 +35,12 @@ class User(AbstractUser):
         max_length=USER_LENGTH,
         verbose_name='Фамилия'
     )
+    avatar = models.ImageField(
+        upload_to='avatars/',
+        null=True,
+        blank=True,
+        default='avatars/default_avatar.png'
+    )
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -60,9 +66,11 @@ class Subscription(models.Model):
         related_name="subscribed",
         verbose_name="Автор рецепта",
     )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     @classmethod
     def is_subscribed(cls, user, author):
+        """Проверка подписки."""
         return cls.objects.filter(user=user, author=author).exists()
 
     class Meta:

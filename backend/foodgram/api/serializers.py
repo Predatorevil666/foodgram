@@ -73,6 +73,14 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
         return user
 
 
+class AvatarUpdateSerializer(serializers.ModelSerializer):
+    """ Сериализатор для обновления аватара."""
+
+    class Meta:
+        model = User
+        fields = ['avatar']
+
+
 class Base64ImageField(serializers.ImageField):
     """Обработка изображения в формате Base64"""
 
@@ -140,3 +148,19 @@ class RecipeSerializer(serializers.ModelSerializer):
                 recipe=instance, **ingredient_data)
 
         return instance
+
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор для получения списка подписок."""
+
+    class Meta:
+        model = Subscription
+        fields = ['author', 'created_at']
+
+
+class CreateSubscriptionSerializer(serializers.ModelSerializer):
+    """Сериализатор для создания новой подписки."""
+
+    class Meta:
+        model = Subscription
+        fields = ['author']

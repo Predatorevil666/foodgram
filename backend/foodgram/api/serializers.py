@@ -3,7 +3,7 @@ from django.core.files.base import ContentFile
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag, Favorite, ShoppingCart
 from users.models import Subscription
 
 User = get_user_model()
@@ -124,6 +124,14 @@ class RecipeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = '__all__'
+
+    def get_is_favorited(self, obj):
+        """Метод проверки на добавление в избранное."""
+        return self.is_item_in_user_list(obj, Favorite)
+
+    def get_is_in_shopping_cart(self, obj):
+        """Метод проверки на присутствие в корзине."""
+        return self.is_item_in_user_list(obj, ShoppingCart)
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')

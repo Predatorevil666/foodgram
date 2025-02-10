@@ -1,9 +1,17 @@
 import base64
-from django.core.files.base import ContentFile
+# from djoser.serializers import UserCreateSerializer
 from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
 from rest_framework import serializers
 
-from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag, Favorite, ShoppingCart
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag
+)
 from users.models import Subscription
 
 User = get_user_model()
@@ -14,7 +22,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     is_subscribed = serializers.SerializerMethodField()
 
-    class Meta:
+    class Meta():
         model = User
         fields = ('id', 'email', 'username', 'first_name', 'last_name',
                   'is_subscribed')
@@ -28,7 +36,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания нового пользователя."""
 
-    class Meta:
+    class Meta():
         model = User
         fields = ('id', 'email', 'username',
                   'first_name', 'last_name', 'password')
@@ -120,6 +128,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(many=True)
     tags = TagSerializer(many=True)
+    image = Base64ImageField(use_url=True)
 
     class Meta:
         model = Recipe
@@ -172,3 +181,12 @@ class CreateSubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = ['author']
+
+
+class AddFavoritesSerializer(serializers.ModelSerializer):
+    """Сериализатор для добавления в избранное по модели Recipe."""
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = ('name', 'image', 'cooking_time')

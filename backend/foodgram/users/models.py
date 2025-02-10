@@ -48,7 +48,7 @@ class User(AbstractUser):
         ordering = ('id',)
 
     def __str__(self):
-        return self.username[:50]
+        return self.username
 
 
 class Subscription(models.Model):

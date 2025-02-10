@@ -195,7 +195,7 @@ class TagInRecipe(models.Model):
 
 
 class ShoppingCart(models.Model):
-    """Модель для описания формирования покупок """
+    """Модель для описания формирования покупок. """
 
     user = models.ForeignKey(
         User,

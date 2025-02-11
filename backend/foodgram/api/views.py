@@ -2,7 +2,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
-
+from djoser.views import UserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, viewsets, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -31,16 +31,34 @@ from users.models import Subscription
 User = get_user_model()
 
 
-class CustomUserViewSet(viewsets.ModelViewSet):
+class CustomUserViewSet(UserViewSet):
+    # class CustomUserViewSet(viewsets.ModelViewSet):
     """Вьюсет для работы с обьектами класса User."""
-
+    print('!!!!!!!!!!!!!!!!!!!!!!!')
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
-    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
+    # serializer_class = CustomUserSerializer
+    # permission_classes = (AllowAny,)
+    print('!!!!!!!!!!!!!!!!!111111111111111')
+
+    def get_permissions(self):
+        # if self.action == 'create':
+        return [AllowAny()]
+        # return [IsAuthenticated(), IsAuthorOrReadOnly()]
+
+    # def get_permissions(self):
+    #     """
+    #     Instantiates and returns the list of permissions that this view requires.
+    #     """
+    #     if self.action == 'list':
+    #         permission_classes = [IsAuthenticated]
+    #     else:
+    #         permission_classes = [AllowAny]
+    #     return [permission() for permission in permission_classes]
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора. """
-        if self.action == 'post':
+        print(self.action, '!!!!!!!!!!!!!!!!!')
+        if self.action == 'create':
             return CustomUserCreateSerializer
         return CustomUserSerializer
 

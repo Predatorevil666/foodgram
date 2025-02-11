@@ -126,7 +126,7 @@ REST_FRAMEWORK = {
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': True,
-    'ACTIVATION_URL': 'activation/{uid}/{token}/',
+    # 'ACTIVATION_URL': 'activation/{uid}/{token}/',
     'SERIALIZERS': {
         'user_create': 'api.serializers.CustomUserCreateSerializer',  # Укажите путь к вашему сериализатору
         'user': 'api.serializers.CustomUserSerializer',  # Укажите путь к вашему сериализатору для пользователя

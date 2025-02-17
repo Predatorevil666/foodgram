@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('recipes', '0003_alter_recipe_slug'),
+        ('users', '0001_initial'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='recipe',
-            name='slug',
-            field=models.SlugField(default='TwNgi5', unique=True),
+            model_name='user',
+            name='email',
+            field=models.EmailField(max_length=254, unique=True, verbose_name='Адрес электронной почты'),
         ),
     ]

@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from users.constants import EMAIL_LENGTH, USER_LENGTH
@@ -21,7 +22,7 @@ class User(AbstractUser):
         ],
 
     )
-    email = models.CharField(
+    email = models.EmailField(
         max_length=EMAIL_LENGTH,
         verbose_name='Адрес электронной почты',
         blank=False,
@@ -42,6 +43,9 @@ class User(AbstractUser):
         default='avatars/default_avatar.png'
     )
 
+    USERNAME_FIELD = 'email'
+    REQUIRED_FIELDS = ('username', 'first_name', 'last_name')
+
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
@@ -49,6 +53,13 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username
+
+    def delete_avatar(self):
+        """Метод для удаления аватара."""
+        if self.avatar:
+            self.avatar.delete(save=False)
+            self.avatar = None
+            self.save()
 
 
 class Subscription(models.Model):
@@ -85,3 +96,9 @@ class Subscription(models.Model):
 
     def __str__(self):
         return f"{self.user} подписан на {self.author}"
+
+    def clean(self):
+        """Проверка на попытку подписаться на самого себя."""
+        if self.user == self.author:
+            raise ValidationError('Вы не можете подписаться на самого себя!')
+        return super().clean()

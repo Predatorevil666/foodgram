@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 
+
+from api.utils import is_item_in_user_list
 from recipes.models import (
     Favorite,
     Ingredient,
@@ -14,12 +16,26 @@ from recipes.models import (
 )
 from users.models import Subscription
 
+
 User = get_user_model()
+
+
+class Base64ImageField(serializers.ImageField):
+    """Обработка изображения в формате Base64"""
+
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
+
+        return super().to_internal_value(data)
 
 
 class CustomUserSerializer(serializers.ModelSerializer):
     """Сериализатор для получения списка пользователей."""
 
+    # avatar = Base64ImageField(required=False, allow_null=True)
     is_subscribed = serializers.SerializerMethodField()
 
     class Meta():
@@ -36,10 +52,12 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     """Сериализатор для создания нового пользователя."""
 
+    avatar = Base64ImageField(required=False, allow_null=True)
+
     class Meta():
         model = User
         fields = ('id', 'email', 'username',
-                  'first_name', 'last_name', 'password')
+                  'first_name', 'last_name', 'password', 'avatar')
         extra_kwargs = {
             'first_name': {
                 'required': True,
@@ -83,22 +101,11 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
 
 class AvatarUpdateSerializer(serializers.ModelSerializer):
     """ Сериализатор для обновления аватара."""
+    # remove_avatar = serializers.BooleanField(required=False)
 
     class Meta:
         model = User
-        fields = ['avatar']
-
-
-class Base64ImageField(serializers.ImageField):
-    """Обработка изображения в формате Base64"""
-
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
-
-        return super().to_internal_value(data)
+        fields = ('avatar',)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -122,27 +129,30 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = IngredientInRecipe
-        fields = ['ingredient', 'quantity']
+        fields = ('ingredient', 'quantity')
 
 
 class RecipeSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(many=True)
     tags = TagSerializer(many=True)
     image = Base64ImageField(use_url=True)
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
         fields = '__all__'
 
-    def get_is_favorited(self, obj):
+    def get_is_favorited(self, obj) -> bool:
         """Метод проверки на добавление в избранное."""
         return self.is_item_in_user_list(obj, Favorite)
 
-    def get_is_in_shopping_cart(self, obj):
+    def get_is_in_shopping_cart(self, obj) -> bool:
         """Метод проверки на присутствие в корзине."""
         return self.is_item_in_user_list(obj, ShoppingCart)
 
     def create(self, validated_data):
+        """Создание нового рецепта вместе с ингредиентами."""
         ingredients_data = validated_data.pop('ingredients')
         recipe = Recipe.objects.create(**validated_data)
         for ingredient_data in ingredients_data:
@@ -150,19 +160,21 @@ class RecipeSerializer(serializers.ModelSerializer):
         return recipe
 
     def update(self, instance, validated_data):
-        ingredients_data = validated_data.pop('ingredients')
+        """Обновление полей рецепта."""
+        ingredients_data = validated_data.pop('ingredients', [])
         instance.name = validated_data.get('name', instance.name)
         instance.image = validated_data.get('image', instance.image)
         instance.text = validated_data.get('text', instance.text)
         instance.cooking_time = validated_data.get(
             'cooking_time', instance.cooking_time)
         instance.save()
-
-        instance.ingredient_list.all().delete()
-
+        if ingredients_data:
+            instance.ingredient_list.all().delete()
         for ingredient_data in ingredients_data:
             IngredientInRecipe.objects.create(
-                recipe=instance, **ingredient_data)
+                recipe=instance,
+                **ingredient_data
+            )
 
         return instance
 
@@ -172,7 +184,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ['author', 'created_at']
+        fields = ('author', 'created_at')
 
 
 class CreateSubscriptionSerializer(serializers.ModelSerializer):
@@ -180,7 +192,7 @@ class CreateSubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = ['author']
+        fields = ('author',)
 
 
 class AddFavoritesSerializer(serializers.ModelSerializer):

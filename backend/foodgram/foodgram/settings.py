@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
@@ -13,7 +12,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '172.20.0.1']
 
 
 INSTALLED_APPS = [
@@ -23,13 +22,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
     'rest_framework',
     'rest_framework.authtoken',
+    'django_filters',
+    'djoser',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
-    'django_filters',
-    'djoser',
 ]
 
 MIDDLEWARE = [
@@ -82,6 +82,9 @@ DATABASES = {
 #     }
 # }
 
+
+AUTH_USER_MODEL = 'users.User'
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -128,8 +131,10 @@ DJOSER = {
     'USER_CREATE_PASSWORD_RETYPE': False,
     # 'ACTIVATION_URL': 'activation/{uid}/{token}/',
     'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserCreateSerializer',  # Укажите путь к вашему сериализатору
-        'user': 'api.serializers.CustomUserSerializer',  # Укажите путь к вашему сериализатору для пользователя
+        # Укажите путь к вашему сериализатору
+        'user_create': 'api.serializers.CustomUserCreateSerializer',
+        # Укажите путь к вашему сериализатору для пользователя
+        'user': 'api.serializers.CustomUserSerializer',
     },
 }
 
@@ -149,14 +154,18 @@ USE_L10N = False
 USE_TZ = True
 
 
+# STATIC_URL = '/static/'
+# STATICFILES_DIR = '/backend_static/static'
+
+# MEDIA_URL = '/media/'
+# MEDIAFILES_DIR = '/var/www/foodgram/media'
+
 STATIC_URL = '/static/'
-STATICFILES_DIR = '/backend_static/static'
+STATIC_ROOT = BASE_DIR / 'collected_static'
 
 MEDIA_URL = '/media/'
-MEDIAFILES_DIR = '/var/www/foodgram/media'
-
+MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-
-AUTH_USER_MODEL = 'users.User'
+DEFAULT_PAGE_SIZE = 6

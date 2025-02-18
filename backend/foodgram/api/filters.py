@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django_filters.rest_framework import (
     BooleanFilter,
     CharFilter,
@@ -44,4 +45,9 @@ class RecipeFilter(FilterSet):
     def filter_by_tags(self, queryset, name, value):
         """Фильтрация рецептов по тегам."""
         tags = self.request.GET.getlist('tags')
-        return queryset.filter(tags__slug__in=tags).distinct()
+        if tags:
+            q_objects = Q()
+            for tag in tags:
+                q_objects |= Q(tags__slug=tag)
+            queryset = queryset.filter(q_objects).distinct()
+        return queryset

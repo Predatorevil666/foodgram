@@ -8,12 +8,11 @@ from rest_framework import filters, viewsets, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.exceptions import AuthenticationFailed
 
 from api.serializers import (
     AddFavoritesSerializer,
-    AvatarUpdateSerializer,
-    RecipeSerializer,
+    RecipeReadSerializer,
+    RecipeWriteSerializer,
     IngredientSerializer,
     TagSerializer,
     CustomUserSerializer,
@@ -49,16 +48,6 @@ class CustomUserViewSet(DjoserUserViewSet):
             return CustomUserCreateSerializer
         return CustomUserSerializer
 
-    # def perform_update(self, serializer):
-    #     serializer.save()
-
-    # def retrieve(self, request, *args, **kwargs):
-    #     """Получение текущего пользователя."""
-    #     if request.user.is_anonymous:
-    #         raise AuthenticationFailed('Вы не аутентифицированы.')
-
-    #     return super().retrieve(request, *args, **kwargs)
-
     @action(
         detail=False,
         methods=['get'],
@@ -67,7 +56,9 @@ class CustomUserViewSet(DjoserUserViewSet):
     def me(self, request):
         """Получение информации о текущем пользователе."""
         serializer = self.get_serializer(
-            request.user, context={'request': request})
+            request.user,
+            context={'request': request}
+        )
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
@@ -78,76 +69,37 @@ class CustomUserViewSet(DjoserUserViewSet):
     )
     def manage_avatar(self, request):
         """Управление аватаром пользователя (изменение или удаление)."""
-
-        if request.method == 'PUT' and not request.data:
-            return Response('В запросе не были переданы данные',
-                            status=status.HTTP_400_BAD_REQUEST)
         user = request.user
-        serializer = CustomUserCreateSerializer(
-            user, data=request.data, partial=True)
+
         if request.method == 'DELETE':
             if user.avatar:
-                user.avatar.delete(save=True)
+                user.avatar.delete(save=False)
+                user.avatar = None
+                user.save()
                 return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response('Аватар не был установлен',
-                            status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'detail': 'Аватар не найден'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        if not request.data:
+            return Response(
+                {'detail': 'Отсутствуют данные для обновления'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        serializer = self.get_serializer(
+            user,
+            data=request.data,
+            partial=True,
+        )
+
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response({'avatar': user.avatar.url}, status=status.HTTP_200_OK)
-
-# class AvatarUpdateViewSet(viewsets.ModelViewSet):
-#     """Вьюсет для обработки запросов на смену аватара."""
-
-#     queryset = User.objects.all()
-#     serializer_class = AvatarUpdateSerializer
-#     permission_classes = (IsAuthenticated,)
-#     http_method_names = ('put', 'update', 'delete')
-
-#     def get_object(self):
-#         """Получение текущего аутентифицированного пользователя"""
-#         return self.request.user
-
-#     @action(
-#         detail=False,
-#         methods=['put', 'delete'],
-#         url_path='me/avatar',
-#         permission_classes=(IsAuthenticated,)
-#     )
-#     def manage_avatar(self, request):
-#         """Управление аватаром пользователя (изменение или удаление)."""
-
-#         if request.method == 'PUT' and not request.data:
-#             return Response('В запросе не были переданы данные',
-#                             status=status.HTTP_400_BAD_REQUEST)
-#         user = self.get_object()
-#         serializer = CustomUserCreateSerializer(
-#             user, data=request.data, partial=True)
-#         if request.method == 'DELETE':
-#             if user.avatar:
-#                 user.avatar.delete(save=True)
-#                 return Response(status=status.HTTP_204_NO_CONTENT)
-#             return Response('Аватар не был установлен',
-#                             status=status.HTTP_404_NOT_FOUND)
-#         serializer.is_valid(raise_exception=True)
-#         serializer.save()
-#         return Response({'avatar': user.avatar.url}, status=status.HTTP_200_OK)
-
-    # def update(self, request, *args, **kwargs):
-        # user = self.get_object()
-        # serializer = self.get_serializer(user, data=request.data, partial=True)
-        # serializer.is_valid(raise_exception=True)
-        # if serializer.validated_data.get('remove_avatar'):
-        #     try:
-        #         user.delete_avatar()
-        #         return Response(status=status.HTTP_204_NO_CONTENT)
-        #     except Exception as e:
-        #         return Response(
-        #             {"error": str(e)},
-        #             status=status.HTTP_400_BAD_REQUEST
-        #         )
-        # else:
-        #     self.perform_update(serializer)
-        #     return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
 
 
 class TagsViewSet(viewsets.ReadOnlyModelViewSet):
@@ -163,12 +115,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
 
     queryset = Recipe.objects.all()
-    serializer_class = RecipeSerializer
-    permission_classes = (IsAuthenticated, IsAuthorOrReadOnly)
+    permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     filterset_fields = ['tags', 'author', 'cooking_time']
+
+    def get_serializer_class(self):
+        """Метод для вызова определенного сериализатора. """
+        if self.action in ('create', 'update', 'partial_update'):
+            return RecipeWriteSerializer
+        return RecipeReadSerializer
 
     def perform_create(self, serializer):
         """Сохранение рецепта с привязкой к автору."""
@@ -194,7 +151,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk):
         """Метод для управления избранным."""
         user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
+        try:
+            recipe = Recipe.objects.get(id=pk)
+        except Recipe.DoesNotExist:
+            return Response(
+                {'errors': 'Рецепт не найден.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'POST':
             if self.check_if_exists(Favorite, user, recipe):
@@ -256,12 +219,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def ingredients_to_txt(ingredients):
         """Метод для объединения ингредиентов в список для загрузки."""
 
-        shopping_list = ''
-        for ingredient in ingredients:
+        shopping_list = 'Список покупок:\n\n'
+        for item in ingredients:
             shopping_list += (
-                f"{ingredient['ingredient__name']}  - "
-                f"{ingredient['sum']}"
-                f"({ingredient['ingredient__measurement_unit']})\n"
+                f"{item['ingredient__name']} "
+                f"({item['ingredient__measurement_unit']}) — "
+                f"{item['total']}\n"
             )
         return shopping_list
 
@@ -282,7 +245,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         ).values(
             'ingredient__name',
             'ingredient__measurement_unit'
-        ).annotate(sum=Sum('quantity'))
+        ).annotate(total=Sum('quantity'))
         shopping_list = self.ingredients_to_txt(ingredients)
         return HttpResponse(shopping_list, content_type='text/plain')
 

@@ -29,17 +29,28 @@ class RecipeFilter(FilterSet):
     author = NumberFilter(field_name='author__id')
     tags = CharFilter(field_name='tags__slug', method='filter_by_tags')
     is_favorited = BooleanFilter(method='filter_favorites')
-    is_in_shopping_cart = BooleanFilter(field_name='is_in_shopping_cart')
+    # is_in_shopping_cart = BooleanFilter(field_name='is_in_shopping_cart')
+    is_in_shopping_cart = BooleanFilter(
+        method="filter_shopping_cart",
+        field_name='shopping_recipe'
+    )
 
     class Meta:
         model = Recipe
         fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
 
+    def filter_shopping_cart(self, queryset, name, value):
+        """Фильтрация рецептов по наличию в корзине."""
+        user = self.request.user
+        if value and user.is_authenticated:
+            return queryset.filter(shopping_recipe__user=user)
+        return queryset
+
     def filter_favorites(self, queryset, name, value):
         """Фильтрация рецептов по избранному."""
         user = self.request.user
-        if value:
-            return queryset.filter(favorites__user=user)
+        if value and user.is_authenticated:
+            return queryset.filter(favorite_recipe__user=user)
         return queryset
 
     def filter_by_tags(self, queryset, name, value):

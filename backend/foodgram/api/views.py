@@ -73,7 +73,8 @@ class CustomUserViewSet(DjoserUserViewSet):
 
         if request.method == 'DELETE':
             if user.avatar:
-                user.avatar.delete(save=False)
+                # user.avatar.delete(save=False)
+                user.avatar.delete(save=True)
                 user.avatar = None
                 user.save()
                 return Response(status=status.HTTP_204_NO_CONTENT)
@@ -141,6 +142,22 @@ class RecipesViewSet(viewsets.ModelViewSet):
             'short_link': short_link
         })
 
+    # def destroy(self, request, *args, **kwargs):
+    #     """Удаление рецепта."""
+    #     instance = self.get_object()
+    #     self.perform_destroy(instance)
+    #     return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=True,
+        methods=('delete',),
+        permission_classes=(IsAuthenticated, IsAuthorOrReadOnly)
+    )
+    def delete_recipe(self, request, pk=None):
+        recipe = self.get_object()
+        recipe.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     @action(
         detail=True,
         methods=('post', 'delete'),
@@ -160,7 +177,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
             )
 
         if request.method == 'POST':
-            if self.check_if_exists(Favorite, user, recipe):
+            if check_if_exists(Favorite, user, recipe):
                 return Response(
                     {'errors': f'Повторно - \"{recipe.name}\" добавить нельзя,'
                      f'он уже есть в избранном у пользователя.'},
@@ -194,7 +211,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         recipe = get_object_or_404(Recipe, id=pk)
 
         if request.method == 'POST':
-            if self.check_if_exists(ShoppingCart, user, recipe):
+            if check_if_exists(ShoppingCart, user, recipe):
                 return Response(
                     {'errors': f'Повторно - \"{recipe.name}\" добавить нельзя,'
                      f'он уже есть в списке покупок.'},
@@ -239,13 +256,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Метод для загрузки ингредиентов и их количества
            для выбранных рецептов.
         """
-
         ingredients = IngredientInRecipe.objects.filter(
             recipe__shopping_recipe__user=request.user
         ).values(
             'ingredient__name',
             'ingredient__measurement_unit'
-        ).annotate(total=Sum('quantity'))
+        ).annotate(total=Sum('amount'))
         shopping_list = self.ingredients_to_txt(ingredients)
         return HttpResponse(shopping_list, content_type='text/plain')
 

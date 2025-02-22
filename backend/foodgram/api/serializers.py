@@ -26,12 +26,13 @@ class Base64ImageField(serializers.ImageField):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
             ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name='image.' + ext)
+            data = ContentFile(base64.b64decode(imgstr), name=f'image.{ext}')
 
         return super().to_internal_value(data)
 
 
 class BaseUserSerializer(serializers.ModelSerializer):
+    # avatar = serializers.ImageField(use_url=True, required=False, allow_null=True)
     avatar = Base64ImageField(required=False, allow_null=True)
     is_subscribed = serializers.SerializerMethodField()
 
@@ -264,8 +265,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         """Создание нового рецепта."""
         ingredients_data = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-        # validated_data.pop("author", None)
-        # validated_data['cooking_time'] = int(validated_data['cooking_time'])
+        validated_data.pop("author", None)
+        validated_data['cooking_time'] = int(validated_data['cooking_time'])
         recipe = Recipe.objects.create(
             **validated_data,
             author=self.context['request'].user
@@ -307,9 +308,10 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     ingredients = IngredientInRecipeSerializer(
         many=True,
-        source='recipes'
+        source='ingredient_list'
     )
     tags = TagSerializer(many=True)
+    # image = serializers.ImageField(use_url=True)
     image = Base64ImageField(use_url=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -325,11 +327,13 @@ class RecipeReadSerializer(serializers.ModelSerializer):
 
     def get_is_favorited(self, obj) -> bool:
         """Метод проверки на добавление в избранное."""
-        return self.is_item_in_user_list(obj, Favorite)
+        user = self.context['request'].user
+        return is_item_in_user_list(obj, Favorite, user)
 
     def get_is_in_shopping_cart(self, obj) -> bool:
         """Метод проверки на присутствие в корзине."""
-        return self.is_item_in_user_list(obj, ShoppingCart)
+        user = self.context['request'].user
+        return is_item_in_user_list(obj, ShoppingCart, user)
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

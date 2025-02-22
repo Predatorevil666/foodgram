@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.crypto import get_random_string
 
-from recipes.constants import USER_LENGTH
+from recipes.constants import GENERATE_LENGTH, USER_LENGTH
 
 User = get_user_model()
 
@@ -118,7 +118,10 @@ class Recipe(models.Model):
         auto_now_add=True,
         verbose_name='Дата публикации'
     )
-    slug = models.SlugField(unique=True, default=get_random_string(6))
+    slug = models.SlugField(
+        max_length=USER_LENGTH,
+        unique=True,
+        default=get_random_string(GENERATE_LENGTH))
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -127,6 +130,13 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name[:100]
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = get_random_string(GENERATE_LENGTH)
+            while Recipe.objects.filter(slug=self.slug).exists():
+                self.slug = get_random_string(GENERATE_LENGTH)
+        super().save(*args, **kwargs)
 
 
 class IngredientInRecipe(models.Model):

@@ -136,17 +136,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Получение подробной информации о рецепте."""
         instance = self.get_object()
         serializer = self.get_serializer(instance)
-        short_link = request.build_absolute_uri(f'/recipes/{instance.slug}/')
-        return Response({
-            'recipe': serializer.data,
-            'short_link': short_link
-        })
-
-    # def destroy(self, request, *args, **kwargs):
-    #     """Удаление рецепта."""
-    #     instance = self.get_object()
-    #     self.perform_destroy(instance)
-    #     return Response(status=status.HTTP_204_NO_CONTENT)
+        return Response(serializer.data)
 
     @action(
         detail=True,
@@ -338,3 +328,23 @@ class SubscriptionViewSet(viewsets.ViewSet):
                 {'detail': 'Подписка не найдена.'},
                 status=status.HTTP_404_NOT_FOUND
             )
+  
+
+# class SubscriptionViewSet(viewsets.ViewSet):
+#     permission_classes = (IsAuthenticated,)
+
+#     @action(detail=True, methods=['post', 'delete'], url_path='subscribe')
+#     def subscribe(self, request, pk=None):
+#         author = get_object_or_404(User, id=pk)
+        
+#         if request.method == 'POST':
+#             if Subscription.objects.filter(user=request.user, author=author).exists():
+#                 return Response(
+#                     {'errors': 'Вы уже подписаны на этого автора!'},
+#                     status=status.HTTP_400_BAD_REQUEST
+#                 )
+#             Subscription.objects.create(user=request.user, author=author)
+#             return Response(status=status.HTTP_201_CREATED)
+        
+#         Subscription.objects.filter(user=request.user, author=author).delete()
+#         return Response(status=status.HTTP_204_NO_CONTENT)

@@ -335,6 +335,13 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return is_item_in_user_list(obj, ShoppingCart, user)
 
+    def get_short_link(self, obj):
+        """Генерация короткой ссылки."""
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(f'/recipes/{obj.slug}/')
+        return None
+
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Сериализатор для получения списка подписок."""

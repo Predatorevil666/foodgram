@@ -7,6 +7,7 @@ from api.views import (
     CustomUserViewSet,
     IngredientViewSet,
     RecipesViewSet,
+    SubscriptionViewSet,
     TagsViewSet
 )
 
@@ -17,13 +18,10 @@ router_v1.register(r'recipes', RecipesViewSet, basename='recipes')
 router_v1.register(r'ingredients', IngredientViewSet, basename='ingredients')
 router_v1.register(r'tags', TagsViewSet, basename='tags')
 router_v1.register(r'users', CustomUserViewSet, basename='users')
-# router_v1.register(
-#     r'users/me/avatar',
-#     AvatarUpdateViewSet,
-#     basename='user-avatar'
-
+router_v1.register(r'subscribe', SubscriptionViewSet, basename='subscription')
 
 urls_ver1 = [
+    path('users/<int:pk>/subscribe/', SubscriptionViewSet.as_view({'post': 'subscribe', 'delete': 'subscribe'}), name='subscribe'),
     path('', include(router_v1.urls)),
     path('auth/', include('djoser.urls.authtoken')),
 ]

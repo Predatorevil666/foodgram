@@ -311,7 +311,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         source='ingredient_list'
     )
     tags = TagSerializer(many=True)
-    # image = serializers.ImageField(use_url=True)
     image = Base64ImageField(use_url=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
@@ -343,20 +342,59 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         return None
 
 
+class RecipeShortSerializer(serializers.ModelSerializer):
+    """Краткий сериализатор для рецептов (используется в подписках)."""
+    image = Base64ImageField()
+
+    class Meta:
+        model = Recipe
+        fields = (
+            'id',
+            'name',
+            'image',
+            'cooking_time'
+        )
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор для получения списка подписок."""
+    """Сериализатор для подписок."""
+
+    id = serializers.ReadOnlyField(source='author.id')
+    email = serializers.ReadOnlyField(source='author.email')
+    username = serializers.ReadOnlyField(source='author.username')
+    first_name = serializers.ReadOnlyField(source='author.first_name')
+    last_name = serializers.ReadOnlyField(source='author.last_name')
+    is_subscribed = serializers.SerializerMethodField()
+    recipes = serializers.SerializerMethodField()
+    recipes_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Subscription
-        fields = ('author', 'created_at')
+        fields = (
+            'id', 'email', 'username', 'first_name', 'last_name',
+            'is_subscribed', 'recipes', 'recipes_count'
+        )
 
+    def get_is_subscribed(self, obj):
+        return True
 
-class CreateSubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор для создания новой подписки."""
+    def get_recipes(self, obj):
+        """
+        Список рецептов с поддержкой лимита через параметр `recipes_limit`.
+        """
+        request = self.context.get('request')
+        recipes = obj.author.recipes.all()
+        if 'recipes_limit' in request.query_params:
+            try:
+                limit = int(request.query_params['recipes_limit'])
+                recipes = recipes[:limit]
+            except ValueError:
+                pass
 
-    class Meta:
-        model = Subscription
-        fields = ('author',)
+        return RecipeShortSerializer(recipes, many=True).data
+
+    def get_recipes_count(self, obj):
+        return obj.author.recipes.count()
 
 
 class AddFavoritesSerializer(serializers.ModelSerializer):

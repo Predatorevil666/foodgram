@@ -18,7 +18,6 @@ from api.serializers import (
     CustomUserSerializer,
     CustomUserCreateSerializer,
     SubscriptionSerializer,
-    CreateSubscriptionSerializer
 )
 from api.permissions import IsAuthorOrReadOnly
 from api.pagination import CustomPagination
@@ -279,10 +278,10 @@ class SubscriptionViewSet(
     pagination_class = CustomPagination
     serializer_class = SubscriptionSerializer
 
-    def get_queryset(self):
-        """Возвращает подписки текущего пользователя."""
-        return Subscription.objects.filter(user=self.request.user)
-    # def list(self, request):
+    # def get_queryset(self):
+    #     """Возвращает подписки текущего пользователя."""
+    #     return Subscription.objects.filter(user=self.request.user)
+    # # def list(self, request):
     #     """
     #     Получить список авторов, на которых подписан пользователь.
     #     """
@@ -299,18 +298,28 @@ class SubscriptionViewSet(
     #         {'detail': 'Вы ни на кого не подписаны.'},
     #         status=status.HTTP_400_BAD_REQUEST
     #     )
-    def paginate_queryset(self, queryset):
-        return self.pagination_class().paginate_queryset(
-            queryset, self.request
-        )
+    # def paginate_queryset(self, queryset):
+    #     return self.pagination_class().paginate_queryset(
+    #         queryset, self.request
+    #     )
 
-    def list(self, request):
-        """Список подписок пользователя с пагинацией."""
-        subscriptions = Subscription.objects.filter(user=request.user)
-        page = self.paginate_queryset(subscriptions)
-        serializer = SubscriptionSerializer(page, many=True)
-        return self.get_paginated_response(serializer.data)
+    # def list(self, request):
+    #     """Список подписок пользователя с пагинацией."""
+    #     subscriptions = Subscription.objects.filter(user=request.user)
+    #     page = self.paginate_queryset(subscriptions)
+    #     serializer = SubscriptionSerializer(page, many=True)
+    #     return self.get_paginated_response(serializer.data)
+    def get_queryset(self):
+        """Возвращает подписки текущего пользователя."""
+        return Subscription.objects.filter(
+            user=self.request.user
+        ).select_related('author')
 
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        url_path='subscribe'
+    )
     def subscribe(self, request, pk=None):
         """Обработка подписки/отписки."""
         author = get_object_or_404(User, id=pk)

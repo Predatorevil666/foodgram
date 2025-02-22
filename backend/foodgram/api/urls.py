@@ -18,17 +18,18 @@ router_v1.register(r'recipes', RecipesViewSet, basename='recipes')
 router_v1.register(r'ingredients', IngredientViewSet, basename='ingredients')
 router_v1.register(r'tags', TagsViewSet, basename='tags')
 router_v1.register(r'users', CustomUserViewSet, basename='users')
-# router_v1.register(r'subscribe', SubscriptionViewSet, basename='subscription')
 
 urls_ver1 = [
     path(
         'users/subscriptions/',
-        SubscriptionViewSet.as_view({'get': 'list'}),
+        SubscriptionViewSet.as_view(
+            {'get': 'list'}),
         name='subscriptions'
     ),
     path(
         'users/<int:pk>/subscribe/',
-        SubscriptionViewSet.as_view({'post': 'subscribe', 'delete': 'subscribe'}),
+        SubscriptionViewSet.as_view(
+            {'post': 'subscribe', 'delete': 'subscribe'}),
         name='subscribe'
     ),
     path('', include(router_v1.urls)),

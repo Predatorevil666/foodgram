@@ -92,7 +92,7 @@ class Recipe(models.Model):
         upload_to='recipes/',
     )
     text = models.CharField(
-        max_length=300,
+        max_length=1500,
         verbose_name='Описание рецепта'
     )
     ingredients = models.ManyToManyField(
@@ -109,7 +109,7 @@ class Recipe(models.Model):
         related_name='recipes'
     )
     cooking_time = models.PositiveSmallIntegerField(
-        verbose_name='Время приготовления, мин',
+        verbose_name='Время приготовления',
         validators=[
             MinValueValidator(1, message='Минимальное значение 1!')
         ]
@@ -144,7 +144,7 @@ class IngredientInRecipe(models.Model):
         verbose_name='Ингредиент',
         related_name='ingredients'
     )
-    quantity = models.PositiveSmallIntegerField(
+    amount = models.PositiveSmallIntegerField(
         verbose_name='Количество',
         validators=[
             MinValueValidator(1, message='Минимальное значение 1!')

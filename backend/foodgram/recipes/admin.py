@@ -22,7 +22,7 @@ class IngredientAdmin(admin.ModelAdmin):
 class IngredientInRecipeAdmin(admin.ModelAdmin):
     """Админ-панель для управления ингредиентами в рецептах."""
 
-    list_display = ('recipe', 'ingredient', 'quantity')
+    list_display = ('recipe', 'ingredient', 'amount')
     search_fields = ('recipe__name', 'ingredient__name')
 
 

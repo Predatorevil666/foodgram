@@ -4,7 +4,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters, viewsets, status
+from rest_framework import mixins, filters, viewsets, status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -269,66 +269,106 @@ class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_class = IngredientFilter
 
 
-class SubscriptionViewSet(viewsets.ViewSet):
+class SubscriptionViewSet(
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+):
     """Вьюсет для управления подписками."""
 
     permission_classes = (IsAuthenticated,)
+    pagination_class = CustomPagination
+    serializer_class = SubscriptionSerializer
+
+    def get_queryset(self):
+        """Возвращает подписки текущего пользователя."""
+        return Subscription.objects.filter(user=self.request.user)
+    # def list(self, request):
+    #     """
+    #     Получить список авторов, на которых подписан пользователь.
+    #     """
+
+    #     user = User.objects.get(username=request.user)
+    #     authors_list = user.follower.all()
+
+    #     if authors_list:
+    #         subscriptions = Subscription.objects.filter(
+    #             user=request.user).select_related('author')
+    #         serializer = SubscriptionSerializer(subscriptions, many=True)
+    #         return Response(serializer.data)
+    #     return Response(
+    #         {'detail': 'Вы ни на кого не подписаны.'},
+    #         status=status.HTTP_400_BAD_REQUEST
+    #     )
+    def paginate_queryset(self, queryset):
+        return self.pagination_class().paginate_queryset(
+            queryset, self.request
+        )
 
     def list(self, request):
-        """
-        Получить список авторов, на которых подписан пользователь.
-        """
+        """Список подписок пользователя с пагинацией."""
+        subscriptions = Subscription.objects.filter(user=request.user)
+        page = self.paginate_queryset(subscriptions)
+        serializer = SubscriptionSerializer(page, many=True)
+        return self.get_paginated_response(serializer.data)
 
-        user = User.objects.get(username=request.user)
-        authors_list = user.follower.all()
+    def subscribe(self, request, pk=None):
+        """Обработка подписки/отписки."""
+        author = get_object_or_404(User, id=pk)
 
-        if authors_list:
-            subscriptions = Subscription.objects.filter(
-                user=request.user).select_related('author')
-            serializer = SubscriptionSerializer(subscriptions, many=True)
-            return Response(serializer.data)
-        return Response(
-            {'detail': 'Вы ни на кого не подписаны.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-
-    def create(self, request):
-        """Подписаться на автора."""
-        serializer = CreateSubscriptionSerializer(data=request.data)
-        if serializer.is_valid():
-            author = serializer.validated_data['author']
-            if not Subscription.objects.filter(
-                    user=request.user,
-                    author=author
+        if request.method == 'POST':
+            if Subscription.objects.filter(
+                user=request.user,
+                author=author
             ).exists():
-                subscription = Subscription.objects.create(
-                    user=request.user, author=author)
                 return Response(
-                    SubscriptionSerializer(subscription).data,
-                    status=status.HTTP_201_CREATED
+                    {'errors': 'Вы уже подписаны на этого автора!'},
+                    status=status.HTTP_400_BAD_REQUEST
                 )
-            return Response(
-                {'detail': 'Вы уже подписаны на этого автора.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+            Subscription.objects.create(user=request.user, author=author)
+            return Response(status=status.HTTP_201_CREATED)
 
-    def destroy(self, request, pk=None):
-        """Отписаться от автора."""
-        try:
-            subscription = Subscription.objects.get(
-                user=request.user, author_id=pk)
-            subscription.delete()
+        if request.method == 'DELETE':
+            Subscription.objects.filter(
+                user=request.user, author=author).delete()
             return Response(status=status.HTTP_204_NO_CONTENT)
-        except Subscription.DoesNotExist:
-            return Response(
-                {'detail': 'Подписка не найдена.'},
-                status=status.HTTP_404_NOT_FOUND
-            )
-  
+
+    # def create(self, request):
+    #     """Подписаться на автора."""
+    #     serializer = CreateSubscriptionSerializer(data=request.data)
+    #     if serializer.is_valid():
+    #         author = serializer.validated_data['author']
+    #         if not Subscription.objects.filter(
+    #                 user=request.user,
+    #                 author=author
+    #         ).exists():
+    #             subscription = Subscription.objects.create(
+    #                 user=request.user, author=author)
+    #             return Response(
+    #                 SubscriptionSerializer(subscription).data,
+    #                 status=status.HTTP_201_CREATED
+    #             )
+    #         return Response(
+    #             {'detail': 'Вы уже подписаны на этого автора.'},
+    #             status=status.HTTP_400_BAD_REQUEST
+    #         )
+    #     return Response(
+    #         serializer.errors,
+    #         status=status.HTTP_400_BAD_REQUEST
+    #     )
+
+    # def destroy(self, request, pk=None):
+    #     """Отписаться от автора."""
+    #     try:
+    #         subscription = Subscription.objects.get(
+    #             user=request.user, author_id=pk)
+    #         subscription.delete()
+    #         return Response(status=status.HTTP_204_NO_CONTENT)
+    #     except Subscription.DoesNotExist:
+    #         return Response(
+    #             {'detail': 'Подписка не найдена.'},
+    #             status=status.HTTP_404_NOT_FOUND
+    #         )
+
 
 # class SubscriptionViewSet(viewsets.ViewSet):
 #     permission_classes = (IsAuthenticated,)
@@ -336,7 +376,7 @@ class SubscriptionViewSet(viewsets.ViewSet):
 #     @action(detail=True, methods=['post', 'delete'], url_path='subscribe')
 #     def subscribe(self, request, pk=None):
 #         author = get_object_or_404(User, id=pk)
-        
+
 #         if request.method == 'POST':
 #             if Subscription.objects.filter(user=request.user, author=author).exists():
 #                 return Response(
@@ -345,6 +385,6 @@ class SubscriptionViewSet(viewsets.ViewSet):
 #                 )
 #             Subscription.objects.create(user=request.user, author=author)
 #             return Response(status=status.HTTP_201_CREATED)
-        
+
 #         Subscription.objects.filter(user=request.user, author=author).delete()
 #         return Response(status=status.HTTP_204_NO_CONTENT)

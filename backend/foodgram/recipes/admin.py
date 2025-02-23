@@ -1,4 +1,6 @@
 from django.contrib import admin
+from django.utils.html import format_html
+
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 
@@ -7,9 +9,11 @@ class IngredientAdmin(admin.ModelAdmin):
     """Админ-панель для управления ингредиентами."""
 
     list_display = ('name', 'measurement_unit')
-    list_filter = ('name', )
     search_fields = ('name', )
     empty_value_display = 'Новый ингредиент'
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).defer('measurement_unit')
 
 
 class IngredientInRecipeAdmin(admin.ModelAdmin):
@@ -22,9 +26,18 @@ class IngredientInRecipeAdmin(admin.ModelAdmin):
 class TagAdmin(admin.ModelAdmin):
     """Админ-панель для управления тегами."""
 
-    list_display = ('name', 'color', 'slug')
-    list_editable = ('color',)
-    empty_value_display = 'Новый таг'
+    list_display = ("name", "color_preview")
+    readonly_fields = ("color_preview",)
+
+    def color_preview(self, obj):
+        """Метод для отображения блока цвета."""
+        return format_html(
+            '<div style="background-color: {};'
+            'width: 50px; height: 20px;"></div>',
+            obj.color
+        )
+
+    color_preview.short_description = "Цвет"
 
 
 class RecipeAdmin(admin.ModelAdmin):

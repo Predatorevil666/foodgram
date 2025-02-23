@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.crypto import get_random_string
+
 from recipes.constants import GENERATE_LENGTH, USER_LENGTH
 
 User = get_user_model()

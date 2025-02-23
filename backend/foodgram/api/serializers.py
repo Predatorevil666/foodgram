@@ -1,20 +1,13 @@
 import base64
-from django.contrib.auth import get_user_model
-from django.core.files.base import ContentFile
-from rest_framework import serializers
 
 from api.constants import MAX_LENGTH
 from api.utils import is_item_in_user_list
-from recipes.models import (
-    Favorite,
-    Ingredient,
-    IngredientInRecipe,
-    Recipe,
-    ShoppingCart,
-    Tag
-)
+from django.contrib.auth import get_user_model
+from django.core.files.base import ContentFile
+from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
+                            ShoppingCart, Tag)
+from rest_framework import serializers
 from users.models import Subscription
-
 
 User = get_user_model()
 
@@ -32,7 +25,8 @@ class Base64ImageField(serializers.ImageField):
 
 
 class BaseUserSerializer(serializers.ModelSerializer):
-    # avatar = serializers.ImageField(use_url=True, required=False, allow_null=True)
+    """Базовый сериализатор пользователя."""
+
     avatar = Base64ImageField(required=False, allow_null=True)
     is_subscribed = serializers.SerializerMethodField()
 
@@ -172,32 +166,6 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         model = IngredientInRecipe
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
-# class IngredientInRecipeSerializer(serializers.ModelSerializer):
-#     """
-#     Сериализатор для отображения полной информации об ингредиентах в рецептах.
-#     """
-
-#     ingredient = IngredientSerializer()
-
-#     class Meta:
-#         model = IngredientInRecipe
-#         fields = ('ingredient', 'amount')
-
-
-# class IngredientInRecipeWriteSerializer(serializers.ModelSerializer):
-#     id = serializers.PrimaryKeyRelatedField(
-#         queryset=Ingredient.objects.all(),
-#         source='ingredient'
-#     )
-#     amount = serializers.IntegerField(
-#         min_value=1,
-#         source='amount'
-#     )
-
-#     class Meta:
-#         model = IngredientInRecipe
-#         fields = ('id', 'amount')
-
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
     """Сериализатор для создания и обновления рецептов."""
@@ -226,8 +194,8 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         """Проверка тегов."""
         if not value:
             raise serializers.ValidationError("Добавьте хотя бы один тег")
-        # elif len(value) > 3:
-        #     raise serializers.ValidationError("Максимум 3 тега.")
+        elif len(value) > 4:
+            raise serializers.ValidationError("Максимум 4 тега.")
         return value
 
     def validate_ingredients(self, value):

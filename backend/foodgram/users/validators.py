@@ -1,5 +1,4 @@
 from django.core.exceptions import ValidationError
-
 from users.constants import RESERVED_USERNAME
 
 

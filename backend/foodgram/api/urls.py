@@ -1,15 +1,7 @@
+from api.views import (CustomUserViewSet, IngredientViewSet, RecipesViewSet,
+                       SubscriptionViewSet, TagsViewSet)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-
-
-from api.views import (
-    # AvatarUpdateViewSet,
-    CustomUserViewSet,
-    IngredientViewSet,
-    RecipesViewSet,
-    SubscriptionViewSet,
-    TagsViewSet
-)
 
 app_name = 'api'
 

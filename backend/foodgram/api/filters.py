@@ -1,13 +1,7 @@
 from django.db.models import Q
-from django_filters.rest_framework import (
-    BooleanFilter,
-    CharFilter,
-    FilterSet,
-    NumberFilter,
-    MultipleChoiceFilter
-)
-
-from recipes.models import Ingredient, Recipe, Tag
+from django_filters.rest_framework import (BooleanFilter, CharFilter,
+                                           FilterSet, NumberFilter)
+from recipes.models import Ingredient, Recipe
 
 
 class IngredientFilter(FilterSet):
@@ -29,7 +23,6 @@ class RecipeFilter(FilterSet):
     author = NumberFilter(field_name='author__id')
     tags = CharFilter(field_name='tags__slug', method='filter_by_tags')
     is_favorited = BooleanFilter(method='filter_favorites')
-    # is_in_shopping_cart = BooleanFilter(field_name='is_in_shopping_cart')
     is_in_shopping_cart = BooleanFilter(
         method="filter_shopping_cart",
         field_name='shopping_recipe'

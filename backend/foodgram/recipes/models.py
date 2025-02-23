@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator, RegexValidator
 from django.db import models
 from django.utils.crypto import get_random_string
-
 from recipes.constants import GENERATE_LENGTH, USER_LENGTH
 
 User = get_user_model()
@@ -130,7 +129,7 @@ class Recipe(models.Model):
 
     def __str__(self):
         return self.name[:100]
-    
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = get_random_string(GENERATE_LENGTH)

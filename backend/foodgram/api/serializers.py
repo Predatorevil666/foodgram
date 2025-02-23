@@ -1,12 +1,13 @@
 import base64
 
-from api.constants import MAX_LENGTH
-from api.utils import is_item_in_user_list
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from rest_framework import serializers
+
+from api.constants import MAX_LENGTH
+from api.utils import is_item_in_user_list
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
-from rest_framework import serializers
 from users.models import Subscription
 
 User = get_user_model()
@@ -129,7 +130,8 @@ class TagSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
-            'slug'
+            'slug',
+            "color"
         )
 
 
@@ -283,13 +285,14 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     author = CustomUserSerializer(read_only=True)
+    short_link = serializers.SerializerMethodField()
 
     class Meta:
         model = Recipe
         fields = (
             'id', 'name', 'text', 'cooking_time',
             'ingredients', 'tags', 'image', 'author',
-            'is_favorited', 'is_in_shopping_cart', 'pub_date'
+            'is_favorited', 'is_in_shopping_cart', 'pub_date', 'short_link',
         )
 
     def get_is_favorited(self, obj) -> bool:

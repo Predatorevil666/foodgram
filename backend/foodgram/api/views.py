@@ -1,3 +1,14 @@
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet as DjoserUserViewSet
+from rest_framework import filters, mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
@@ -7,18 +18,8 @@ from api.serializers import (AddFavoritesSerializer,
                              RecipeWriteSerializer, SubscriptionSerializer,
                              TagSerializer)
 from api.utils import check_if_exists
-from django.contrib.auth import get_user_model
-from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet as DjoserUserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
-from rest_framework import filters, mixins, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
 from users.models import Subscription
 
 User = get_user_model()
@@ -144,6 +145,21 @@ class RecipesViewSet(viewsets.ModelViewSet):
         url_path='favorite',
         url_name='favorite',
     )
+    @action(
+        detail=True,
+        methods=['get'],
+        url_path='get-link',
+        url_name='get_short_link'
+    )
+    def get_short_link(self, request, pk=None):
+        """Генерация короткой ссылки на рецепт."""
+        recipe = self.get_object()
+        serializer = self.get_serializer(recipe)
+        return Response(
+            {'short_link': serializer.data.get('short_link')},
+            status=status.HTTP_200_OK
+        )
+
     def favorite(self, request, pk):
         """Метод для управления избранным."""
         user = request.user

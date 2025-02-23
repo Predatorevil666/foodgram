@@ -1,7 +1,8 @@
-from api.views import (CustomUserViewSet, IngredientViewSet, RecipesViewSet,
-                       SubscriptionViewSet, TagsViewSet)
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
+
+from api.views import (CustomUserViewSet, IngredientViewSet, RecipesViewSet,
+                       SubscriptionViewSet, TagsViewSet)
 
 app_name = 'api'
 
@@ -12,6 +13,7 @@ router_v1.register(r'tags', TagsViewSet, basename='tags')
 router_v1.register(r'users', CustomUserViewSet, basename='users')
 
 urls_ver1 = [
+
     path(
         'users/subscriptions/',
         SubscriptionViewSet.as_view(
@@ -23,6 +25,11 @@ urls_ver1 = [
         SubscriptionViewSet.as_view(
             {'post': 'subscribe', 'delete': 'subscribe'}),
         name='subscribe'
+    ),
+    path(
+        'recipes/<int:pk>/get-link/',
+        RecipesViewSet.as_view({'get': 'get_short_link'}),
+        name='get_short_link'
     ),
     path('', include(router_v1.urls)),
     path('auth/', include('djoser.urls.authtoken')),

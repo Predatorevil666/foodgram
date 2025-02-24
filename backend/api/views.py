@@ -1,14 +1,3 @@
-from django.contrib.auth import get_user_model
-from django.db.models import Sum
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
-from djoser.views import UserViewSet as DjoserUserViewSet
-from rest_framework import filters, mixins, status, viewsets
-from rest_framework.decorators import action
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
@@ -18,8 +7,18 @@ from api.serializers import (AddFavoritesSerializer,
                              RecipeWriteSerializer, SubscriptionSerializer,
                              TagSerializer)
 from api.utils import check_if_exists
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from djoser.views import UserViewSet as DjoserUserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
+from rest_framework import filters, mixins, status, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
 from users.models import Subscription
 
 User = get_user_model()
@@ -199,11 +198,19 @@ class RecipesViewSet(viewsets.ModelViewSet):
         url_path='shopping_cart',
         url_name='shopping_cart',
     )
-    def shopping_cart(self, request, pk):
+    def shopping_cart(self, request, pk=None):
         """Метод для управления списком покупок."""
 
         user = request.user
-        recipe = get_object_or_404(Recipe, id=pk)
+        # recipe = get_object_or_404(Recipe, id=pk)
+        try:
+            recipe_id = int(pk)
+            recipe = Recipe.objects.get(pk=recipe_id)
+        except (ValueError, Recipe.DoesNotExist):
+            return Response(
+                {'error': 'Неверный ID рецепта'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         if request.method == 'POST':
             if check_if_exists(ShoppingCart, user, recipe):
@@ -252,7 +259,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
            для выбранных рецептов.
         """
         ingredients = IngredientInRecipe.objects.filter(
-            recipe__shopping_recipe__user=request.user
+            recipe__shoppingcart_recipe__user=request.user
         ).values(
             'ingredient__name',
             'ingredient__measurement_unit'
@@ -288,7 +295,7 @@ class SubscriptionViewSet(
         """Возвращает подписки текущего пользователя."""
         return Subscription.objects.filter(
             user=self.request.user
-        ).select_related('author')
+        ).select_related('author').order_by('author__username')
 
     @action(
         detail=True,
@@ -300,6 +307,11 @@ class SubscriptionViewSet(
         author = get_object_or_404(User, id=pk)
 
         if request.method == 'POST':
+            if request.user == author:
+                return Response(
+                    {'errors': 'Вы не можете подписаться на самого себя.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             if Subscription.objects.filter(
                 user=request.user,
                 author=author
@@ -308,8 +320,15 @@ class SubscriptionViewSet(
                     {'errors': 'Вы уже подписаны на этого автора!'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-            Subscription.objects.create(user=request.user, author=author)
-            return Response(status=status.HTTP_201_CREATED)
+            subscription = Subscription.objects.create(
+                user=request.user,
+                author=author
+            )
+            serializer = SubscriptionSerializer(
+                subscription,
+                context={'request': request}
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
             Subscription.objects.filter(

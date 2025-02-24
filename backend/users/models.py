@@ -90,6 +90,7 @@ class Subscription(models.Model):
                 name='prevent_self_subscription'
             ),
         ]
+        ordering = ('author', 'user')
 
     def __str__(self):
         return f"{self.user} подписан на {self.author}"

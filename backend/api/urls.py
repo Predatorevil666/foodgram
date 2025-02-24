@@ -36,6 +36,6 @@ urls_ver1 = [
 ]
 
 urlpatterns = [
-    path('v1/', include(urls_ver1)),
+    path('', include(urls_ver1)),
 
 ]

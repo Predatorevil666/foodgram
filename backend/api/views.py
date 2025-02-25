@@ -15,7 +15,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
-from rest_framework import filters, mixins, status, viewsets
+from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -29,8 +29,13 @@ class CustomUserViewSet(DjoserUserViewSet):
 
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
-    permission_classes = (AllowAny,)
+    # permission_classes = (AllowAny,)
     pagination_class = CustomPagination
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.AllowAny()]
+        return super().get_permissions()
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора. """
@@ -202,7 +207,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Метод для управления списком покупок."""
 
         user = request.user
-        # recipe = get_object_or_404(Recipe, id=pk)
         try:
             recipe_id = int(pk)
             recipe = Recipe.objects.get(pk=recipe_id)

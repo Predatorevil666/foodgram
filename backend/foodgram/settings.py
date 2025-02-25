@@ -116,33 +116,17 @@ REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': (
         'django_filters.rest_framework.DjangoFilterBackend',
     ),
-    # 'DEFAULT_THROTTLE_CLASSES': [
-    #     'rest_framework.throttling.AnonRateThrottle',
-    #     'rest_framework.throttling.UserRateThrottle',
-    # ],
-    # 'DEFAULT_THROTTLE_RATES': {
-    #     'anon': '10/minute',
-    #     'user': '100/minute',
-
-    # }
 }
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': False,
-    # 'ACTIVATION_URL': 'activation/{uid}/{token}/',
     'SERIALIZERS': {
-        # Укажите путь к вашему сериализатору
         'user_create': 'api.serializers.CustomUserCreateSerializer',
-        # Укажите путь к вашему сериализатору для пользователя
         'user': 'api.serializers.CustomUserSerializer',
     },
 }
 
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
-#     'AUTH_HEADER_TYPES': ('Bearer',),
-# }
 
 LANGUAGE_CODE = 'ru-RU'
 

@@ -389,3 +389,23 @@ class AddFavoritesSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = ('name', 'image', 'cooking_time')
+
+
+class AvatarSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('avatar',)
+        extra_kwargs = {
+            'avatar': {
+                'required': True,
+                'allow_null': False
+            }
+        }
+
+    def to_representation(self, instance):
+        return {
+            'avatar': self.context['request'].build_absolute_uri(
+                instance.avatar.url
+            )
+            if instance.avatar else None
+        }

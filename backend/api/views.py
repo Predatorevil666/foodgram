@@ -1,7 +1,7 @@
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (AddFavoritesSerializer,
+from api.serializers import (AddFavoritesSerializer, AvatarSerializer,
                              CustomUserCreateSerializer, CustomUserSerializer,
                              IngredientSerializer, RecipeReadSerializer,
                              RecipeWriteSerializer, SubscriptionSerializer,
@@ -29,7 +29,6 @@ class CustomUserViewSet(DjoserUserViewSet):
 
     queryset = User.objects.all()
     serializer_class = CustomUserSerializer
-    # permission_classes = (AllowAny,)
     pagination_class = CustomPagination
 
     def get_permissions(self):
@@ -60,7 +59,8 @@ class CustomUserViewSet(DjoserUserViewSet):
         detail=False,
         methods=['put', 'delete'],
         url_path='me/avatar',
-        permission_classes=(IsAuthenticated,)
+        permission_classes=(IsAuthenticated,),
+        serializer_class=AvatarSerializer
     )
     def manage_avatar(self, request):
         """Управление аватаром пользователя (изменение или удаление)."""
@@ -68,7 +68,7 @@ class CustomUserViewSet(DjoserUserViewSet):
 
         if request.method == 'DELETE':
             if user.avatar:
-                user.avatar.delete(save=True)
+                user.avatar.delete()
                 user.avatar = None
                 user.save()
                 return Response(status=status.HTTP_204_NO_CONTENT)

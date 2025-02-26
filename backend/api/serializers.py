@@ -392,6 +392,8 @@ class AddFavoritesSerializer(serializers.ModelSerializer):
 
 
 class AvatarSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=False, allow_null=True)
+
     class Meta:
         model = User
         fields = ('avatar',)
@@ -409,3 +411,5 @@ class AvatarSerializer(serializers.ModelSerializer):
             )
             if instance.avatar else None
         }
+
+

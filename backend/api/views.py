@@ -40,6 +40,8 @@ class CustomUserViewSet(DjoserUserViewSet):
         """Метод для вызова определенного сериализатора. """
         if self.action == 'create':
             return CustomUserCreateSerializer
+        elif self.action == 'manage_avatar':
+            return AvatarSerializer
         return CustomUserSerializer
 
     @action(
@@ -63,10 +65,28 @@ class CustomUserViewSet(DjoserUserViewSet):
         serializer_class=AvatarSerializer
     )
     def manage_avatar(self, request):
-        """Управление аватаром пользователя (изменение или удаление)."""
         user = request.user
 
-        if request.method == 'DELETE':
+        if request.method == 'PUT':
+            if 'avatar' not in request.data:
+                return Response(
+                    {"avatar": "Это поле обязательно."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            serializer = self.get_serializer(
+                user, data=request.data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            serializer.save()
+            return Response(
+                serializer.data,
+                status=status.HTTP_200_OK
+            )
+
+        elif request.method == 'DELETE':
             if user.avatar:
                 user.avatar.delete()
                 user.avatar = None
@@ -76,25 +96,6 @@ class CustomUserViewSet(DjoserUserViewSet):
                 {'detail': 'Аватар не найден'},
                 status=status.HTTP_404_NOT_FOUND
             )
-
-        if not request.data:
-            return Response(
-                {'detail': 'Отсутствуют данные для обновления'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        serializer = self.get_serializer(
-            user,
-            data=request.data,
-            partial=True,
-        )
-
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(
-            serializer.data,
-            status=status.HTTP_200_OK
-        )
 
 
 class TagsViewSet(viewsets.ReadOnlyModelViewSet):

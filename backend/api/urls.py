@@ -15,6 +15,8 @@ router_v1.register(r'users', CustomUserViewSet, basename='users')
 
 urls_ver1 = [
 
+    path('auth/', include('djoser.urls')),
+    path('auth/', include('djoser.urls.authtoken')),
 
     path(
         'users/subscriptions/',
@@ -34,8 +36,7 @@ urls_ver1 = [
         name='get_short_link'
     ),
 
-    path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.authtoken')),
+
     path('', include(router_v1.urls)),
 ]
 

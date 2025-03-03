@@ -110,7 +110,9 @@ class Recipe(models.Model):
     slug = models.SlugField(
         max_length=SHORT_LINK,
         unique=True,
-        default=get_random_string(GENERATE_LENGTH))
+        # default=get_random_string(GENERATE_LENGTH),
+        editable=False
+    )
 
     class Meta:
         verbose_name = 'Рецепт'
@@ -120,19 +122,18 @@ class Recipe(models.Model):
     def __str__(self):
         return self.name[:RECIPE_NAME_LENGTH]
 
-    # def save(self, *args, **kwargs):
-    #     if not self.slug:
-    #         self.slug = get_random_string(GENERATE_LENGTH)
-    #         while Recipe.objects.filter(slug=self.slug).exists():
-    #             self.slug = get_random_string(GENERATE_LENGTH)
-    #     super().save(*args, **kwargs)
     def save(self, *args, **kwargs):
+        """Генерация уникального slug перед сохранением."""
         if not self.slug:
-            # Генерируем уникальный slug используя UUID
-            self.slug = uuid.uuid4().hex[:GENERATE_LENGTH]
-            while Recipe.objects.filter(slug=self.slug).exists():
-                self.slug = uuid.uuid4().hex[:GENERATE_LENGTH]
+            self.slug = self._generate_unique_slug()
         super().save(*args, **kwargs)
+
+    def _generate_unique_slug(self):
+        """Генерирует уникальный slug с проверкой в базе."""
+        while True:
+            slug = uuid.uuid4().hex[:GENERATE_LENGTH]
+            if not Recipe.objects.filter(slug=slug).exists():
+                return slug
 
 
 class IngredientInRecipe(models.Model):

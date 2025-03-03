@@ -157,7 +157,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all(),
-        source='ingredient.id'
+        source="ingredient"
     )
     name = serializers.ReadOnlyField(
         source='ingredient.name'
@@ -174,14 +174,23 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
     def to_internal_value(self, data):
-        data['ingredient'] = data.get('id')
+        """Преобразуем входные данные в формат, понятный модели."""
+        data['ingredient'] = data.pop('id')
         return super().to_internal_value(data)
+    # def to_internal_value(self, data):
+    #     """Преобразуем данные для модели."""
+    #     return {
+    #         "ingredient": data["id"],  # id -> ingredient
+    #         "amount": data["amount"]
+    #     }
 
-    def validate(self, attrs):
-        if attrs['amount'] < 1:
+    def validate_ingredient(self, value):
+        """Проверяем существование ингредиента."""
+        if not Ingredient.objects.filter(id=value).exists():
             raise serializers.ValidationError(
-                "Количество не может быть меньше 1")
-        return attrs
+                f"Ингредиент с ID {value} не найден."
+            )
+        return value
 
 
 class RecipeWriteSerializer(serializers.ModelSerializer):
@@ -201,7 +210,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'name', 'text', 'cooking_time',
             'ingredients', 'tags', 'image', 'author'
         )
-        read_only_fields = ('author',)
+        read_only_fields = ('author', 'slug')
         extra_kwargs = {
             'name': {'required': True, 'max_length': MAX_LENGTH},
             'text': {'required': True}
@@ -216,52 +225,40 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         return value
 
     def validate_ingredients(self, value):
-        """Валидация ингредиентов с проверкой структуры данных."""
+        """Валидация ингредиентов."""
         if not isinstance(value, list):
             raise serializers.ValidationError(
-                "Ингредиенты должны быть списком объектов"
+                "Ингредиенты должны быть списком объектов."
             )
 
-        validated_ingredients = []
+        seen_ids = set()
         for item in value:
-            if 'id' not in item:
+            if "id" not in item or "amount" not in item:
                 raise serializers.ValidationError(
-                    "Каждый ингредиент должен содержать поле 'id'"
+                    "Каждый ингредиент должен содержать поля 'id' и 'amount'."
                 )
-            if 'amount' not in item:
+            if item["id"] in seen_ids:
                 raise serializers.ValidationError(
-                    "Каждый ингредиент должен содержать поле 'amount'"
+                    f"Ингредиент с ID {item['id']} указан повторно."
                 )
-
-            try:
-                ingredient = Ingredient.objects.get(pk=item['id'])
-            except Ingredient.DoesNotExist:
-                raise serializers.ValidationError(
-                    f"Ингредиент с ID {item['id']} не существует"
-                )
-
-            validated_ingredients.append({
-                'ingredient': ingredient,
-                'amount': item['amount']
-            })
-
-        return validated_ingredients
+            seen_ids.add(item["id"])
+        return value
 
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
         ingredients_data = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
-
         recipe = Recipe.objects.create(**validated_data)
         recipe.tags.set(tags)
 
-        IngredientInRecipe.objects.bulk_create([
+        ingredients = [
             IngredientInRecipe(
                 recipe=recipe,
                 ingredient=item['ingredient'],
                 amount=item['amount']
             ) for item in ingredients_data
-        ])
+        ]
+        IngredientInRecipe.objects.bulk_create(ingredients)
 
         return recipe
 
@@ -411,5 +408,3 @@ class AvatarSerializer(serializers.ModelSerializer):
             )
             if instance.avatar else None
         }
-
-

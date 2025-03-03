@@ -145,13 +145,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     @action(
         detail=True,
-        methods=('post', 'delete'),
-        permission_classes=(IsAuthenticated,),
-        url_path='favorite',
-        url_name='favorite',
-    )
-    @action(
-        detail=True,
         methods=['get'],
         url_path='get-link',
         url_name='get_short_link'
@@ -165,6 +158,13 @@ class RecipesViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK
         )
 
+    @action(
+        detail=True,
+        methods=('post', 'delete'),
+        permission_classes=(IsAuthenticated,),
+        url_path='favorite',
+        url_name='favorite',
+    )
     def favorite(self, request, pk):
         """Метод для управления избранным."""
         user = request.user

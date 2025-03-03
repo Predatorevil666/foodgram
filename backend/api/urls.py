@@ -1,4 +1,5 @@
 from django.urls import include, path
+
 from rest_framework.routers import DefaultRouter
 
 from api.views import (CustomUserViewSet, IngredientViewSet, RecipesViewSet,
@@ -13,6 +14,7 @@ router_v1.register(r'tags', TagsViewSet, basename='tags')
 router_v1.register(r'users', CustomUserViewSet, basename='users')
 
 urls_ver1 = [
+
 
     path(
         'users/subscriptions/',
@@ -31,11 +33,12 @@ urls_ver1 = [
         RecipesViewSet.as_view({'get': 'get_short_link'}),
         name='get_short_link'
     ),
-    path('', include(router_v1.urls)),
+
+    path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
+    path('', include(router_v1.urls)),
 ]
 
 urlpatterns = [
     path('', include(urls_ver1)),
-
 ]

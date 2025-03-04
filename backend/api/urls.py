@@ -15,7 +15,7 @@ router_v1.register(r'users', CustomUserViewSet, basename='users')
 
 urls_ver1 = [
 
-    path('auth/', include('djoser.urls')),
+    path('', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
 
     path(

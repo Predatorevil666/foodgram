@@ -30,16 +30,22 @@ class BaseUserSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField(required=False, allow_null=True)
     is_subscribed = serializers.SerializerMethodField()
 
+    # class Meta:
+    #     model = User
+    #     fields: tuple[str, ...] = (
+    #         'id',
+    #         'email',
+    #         'username',
+    #         'first_name',
+    #         'last_name',
+    #         'avatar',
+    #         'is_subscribed'
+    #     )
     class Meta:
         model = User
-        fields: tuple[str, ...] = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'avatar',
-            'is_subscribed'
+        fields = (
+            'id', 'email', 'username',
+            'first_name', 'last_name', 'avatar', 'is_subscribed'
         )
 
     def get_is_subscribed(self, obj):
@@ -50,6 +56,8 @@ class BaseUserSerializer(serializers.ModelSerializer):
 
 class CustomUserSerializer(BaseUserSerializer):
     """Сериализатор для чтения данных пользователя."""
+
+    avatar = serializers.SerializerMethodField()
 
     class Meta(BaseUserSerializer.Meta):
         fields = BaseUserSerializer.Meta.fields

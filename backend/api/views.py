@@ -21,6 +21,7 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from users.models import Subscription
 
+
 User = get_user_model()
 
 
@@ -34,7 +35,7 @@ class CustomUserViewSet(DjoserUserViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             return [permissions.AllowAny()]
-        return super().get_permissions()
+        return [permissions.IsAuthenticated()]
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора. """
@@ -169,7 +170,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Метод для управления избранным."""
         user = request.user
         try:
-            recipe = Recipe.objects.get(id=pk)
+            recipe_id = int(pk)
+        except ValueError:
+            return Response(
+                {'error': 'ID рецепта должно быть числом.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            recipe = Recipe.objects.get(id=recipe_id)
         except Recipe.DoesNotExist:
             return Response(
                 {'errors': 'Рецепт не найден.'},

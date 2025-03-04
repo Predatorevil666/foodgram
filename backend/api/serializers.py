@@ -30,28 +30,22 @@ class BaseUserSerializer(serializers.ModelSerializer):
     avatar = Base64ImageField(required=False, allow_null=True)
     is_subscribed = serializers.SerializerMethodField()
 
-    # class Meta:
-    #     model = User
-    #     fields: tuple[str, ...] = (
-    #         'id',
-    #         'email',
-    #         'username',
-    #         'first_name',
-    #         'last_name',
-    #         'avatar',
-    #         'is_subscribed'
-    #     )
     class Meta:
         model = User
-        fields = (
-            'id', 'email', 'username',
-            'first_name', 'last_name', 'avatar', 'is_subscribed'
+        fields: tuple[str, ...] = (
+            'id',
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'avatar',
+            'is_subscribed'
         )
 
     def get_is_subscribed(self, obj):
         """Метод проверки подписки."""
         user = self.context.get('request').user
-        return not user.is_anonymous and Subscription.is_subscribed(user, obj)
+        return user.is_authenticated and Subscription.is_subscribed(user, obj)
 
 
 class CustomUserSerializer(BaseUserSerializer):
@@ -185,12 +179,6 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         """Преобразуем входные данные в формат, понятный модели."""
         data['ingredient'] = data.pop('id')
         return super().to_internal_value(data)
-    # def to_internal_value(self, data):
-    #     """Преобразуем данные для модели."""
-    #     return {
-    #         "ingredient": data["id"],  # id -> ingredient
-    #         "amount": data["amount"]
-    #     }
 
     def validate_ingredient(self, value):
         """Проверяем существование ингредиента."""

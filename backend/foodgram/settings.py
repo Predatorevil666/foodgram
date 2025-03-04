@@ -122,15 +122,15 @@ DJOSER = {
     'LOGIN_FIELD': 'email',
     'USER_CREATE_PASSWORD_RETYPE': False,
     'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserCreateSerializer',
+        # 'user_create': 'api.serializers.CustomUserCreateSerializer',
         'user': 'api.serializers.CustomUserSerializer',
         'current_user': 'api.serializers.CustomUserSerializer',
-        'set_password': 'djoser.serializers.SetPasswordSerializer',
+        # 'set_password': 'djoser.serializers.SetPasswordSerializer',
     },
     'PERMISSIONS': {
-        'user': ['rest_framework.permissions.IsAuthenticated'],
         'user_list': ['rest_framework.permissions.AllowAny'],
-        'set_password': ['rest_framework.permissions.IsAuthenticated'],
+        'user': ['rest_framework.permissions.IsAuthenticated'],
+        # 'set_password': ['rest_framework.permissions.IsAuthenticated'],
     }
 }
 

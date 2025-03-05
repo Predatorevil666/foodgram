@@ -107,7 +107,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 6,
 
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+        'rest_framework.permissions.AllowAny',
     ],
 
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -120,17 +120,16 @@ REST_FRAMEWORK = {
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
-    'USER_CREATE_PASSWORD_RETYPE': False,
     'SERIALIZERS': {
         # 'user_create': 'api.serializers.CustomUserCreateSerializer',
         'user': 'api.serializers.CustomUserSerializer',
+        # 'user': 'djoser.serializers.UserSerializer',
         'current_user': 'api.serializers.CustomUserSerializer',
-        # 'set_password': 'djoser.serializers.SetPasswordSerializer',
     },
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.AllowAny'],
         'user': ['rest_framework.permissions.IsAuthenticated'],
-        # 'set_password': ['rest_framework.permissions.IsAuthenticated'],
+        'current_user': ['rest_framework.permissions.IsAuthenticated'],
     }
 }
 

@@ -16,7 +16,7 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import filters, mixins, permissions, status, viewsets
-from rest_framework.authentication import TokenAuthentication
+# from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
@@ -39,11 +39,12 @@ class CustomUserViewSet(DjoserUserViewSet):
     #     return [TokenAuthentication()]
 
     def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.AllowAny()]
-        elif self.action == 'me':
+        # if self.action in ['list', 'retrieve']:
+        #     return [permissions.AllowAny()]
+        if self.action == 'me':
             return [permissions.IsAuthenticated()]
-        return [permissions.IsAuthenticated()]
+        # return [permissions.IsAuthenticated()]
+        return super().get_permissions()
 
     # def retrieve(self, request, *args, **kwargs):
     #     return super().retrieve(request, *args, **kwargs)
@@ -61,7 +62,6 @@ class CustomUserViewSet(DjoserUserViewSet):
     #     permission_classes=(IsAuthenticated,)
     # )
     # def me(self, request):
-    #     print(request, '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
     #     serializer = self.get_serializer(
     #         request.user,
     #         context={'request': request}

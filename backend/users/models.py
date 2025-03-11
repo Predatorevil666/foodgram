@@ -72,19 +72,9 @@ class Subscription(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
 
-    # @classmethod
-    # def is_subscribed(cls, user, author):
-    #     """Проверка подписки."""
-    #     return cls.objects.filter(user=user, author=author).exists()
-    # @classmethod
-    # def is_subscribed(cls, user, author):
-    #     # Проверяем, что user - это объект пользователя, а не AnonymousUser
-    #     if not user.is_authenticated:
-    #         return False
-    #     return cls.objects.filter(user=user, author=author).exists()
     @classmethod
     def is_subscribed(cls, user, author):
-        # Гарантируем, что user не анонимный
+        """Проверка подписки."""
         if user.is_anonymous:
             return False
         return cls.objects.filter(user=user, author=author).exists()

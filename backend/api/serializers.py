@@ -44,16 +44,10 @@ class BaseUserSerializer(serializers.ModelSerializer):
             'is_subscribed'
         )
 
-    # def get_is_subscribed(self, obj):
-    #     """Проверка подписки только для аутентифицированных пользователей"""
-    #     user = self.context.get('request').user
-    #     if user.is_authenticated:
-    #         return Subscription.is_subscribed(user, obj)
-    #     return False
     def get_is_subscribed(self, obj):
+        """Проверка подписки только для аутентифицированных пользователей."""
         user = self.context.get('request').user
-        # Явная проверка, что пользователь аутентифицирован
-        if not user.is_authenticated:
+        if user.is_anonymous:
             return False
         return Subscription.is_subscribed(user, obj)
 

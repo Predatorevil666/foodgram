@@ -2,7 +2,6 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.utils.crypto import get_random_string
 from recipes.constants import (GENERATE_LENGTH, INGREDIENT_LENGTH,
                                MAX_COOKING_TIME, MAX_INGREDIENT_AMOUNT,
                                MEASUREMENT_UNIT_LENGTH, MIN_COOKING_TIME,
@@ -110,7 +109,6 @@ class Recipe(models.Model):
     slug = models.SlugField(
         max_length=SHORT_LINK,
         unique=True,
-        # default=get_random_string(GENERATE_LENGTH),
         editable=False
     )
 

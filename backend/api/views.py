@@ -16,12 +16,12 @@ from djoser.views import UserViewSet as DjoserUserViewSet
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import filters, mixins, permissions, status, viewsets
-# from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from users.models import Subscription
-
+import logging
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -29,25 +29,8 @@ User = get_user_model()
 class CustomUserViewSet(DjoserUserViewSet):
     """Вьюсет для работы с обьектами класса User."""
     queryset = User.objects.all()
-    serializer_class = CustomUserSerializer
+    permission_classes = (permissions.AllowAny,)
     pagination_class = CustomPagination
-    # authentication_classes = [TokenAuthentication]
-
-    # def get_authenticators(self):
-    #     if self.action == 'retrieve':
-    #         return []
-    #     return [TokenAuthentication()]
-
-    def get_permissions(self):
-        # if self.action in ['list', 'retrieve']:
-        #     return [permissions.AllowAny()]
-        if self.action == 'me':
-            return [permissions.IsAuthenticated()]
-        # return [permissions.IsAuthenticated()]
-        return super().get_permissions()
-
-    # def retrieve(self, request, *args, **kwargs):
-    #     return super().retrieve(request, *args, **kwargs)
 
     def get_serializer_class(self):
         if self.action == 'create':
@@ -56,26 +39,26 @@ class CustomUserViewSet(DjoserUserViewSet):
             return AvatarSerializer
         return CustomUserSerializer
 
-    # @action(
-    #     detail=False,
-    #     methods=['get'],
-    #     permission_classes=(IsAuthenticated,)
-    # )
-    # def me(self, request):
-    #     serializer = self.get_serializer(
-    #         request.user,
-    #         context={'request': request}
-    #     )
-    #     return Response(serializer.data, status=status.HTTP_200_OK)
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=[permissions.IsAuthenticated]
+    )
+    def me(self, request):
+        """Получение информации о текущем пользователе."""
+        serializer = self.get_serializer(
+            request.user, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(
         detail=False,
         methods=['put', 'delete'],
         url_path='me/avatar',
-        permission_classes=(IsAuthenticated,),
+        permission_classes=[permissions.IsAuthenticated],
         serializer_class=AvatarSerializer
     )
     def manage_avatar(self, request):
+        """Управление аватаром пользователя."""
         user = request.user
 
         if request.method == 'PUT':

@@ -1,4 +1,5 @@
 import base64
+import logging
 
 from api.constants import MAX_LENGTH
 from api.utils import is_item_in_user_list
@@ -8,7 +9,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
 from users.models import Subscription
-import logging
+
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -178,8 +179,8 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
     def to_internal_value(self, data):
-        """Преобразуем входные данные для модели"""
-        data["ingredient"] = data.pop("id")
+        """Преобразуем входные данные для модели."""
+        data["ingredient"] = data.get("id")
         return super().to_internal_value(data)
 
     def validate_ingredient(self, value):
@@ -193,19 +194,25 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     ingredients = IngredientInRecipeSerializer(
         many=True,
-        required=True
+        required=True,
+        allow_empty=False
     )
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
-        many=True
+        many=True,
+        required=True,
+        allow_empty=False
     )
     image = Base64ImageField()
-    cooking_time = serializers.IntegerField(min_value=1)
+    cooking_time = serializers.IntegerField(
+        min_value=1,
+        required=True
+    )
 
     class Meta:
         model = Recipe
         fields = (
-            'name', 'text', 'cooking_time',
+            'id', 'name', 'text', 'cooking_time',
             'ingredients', 'tags', 'image', 'author'
         )
         read_only_fields = ('author', 'slug')
@@ -218,69 +225,31 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         """Проверка тегов."""
         if not value:
             raise serializers.ValidationError("Добавьте хотя бы один тег")
-        elif len(value) > 4:
+
+        unique_tags = set(value)
+        if len(unique_tags) != len(value):
+            raise serializers.ValidationError("Теги не должны повторяться")
+
+        if len(value) > 4:
             raise serializers.ValidationError("Максимум 4 тега.")
         return value
 
-    # def validate_ingredients(self, value):
-    #     """Валидация ингредиентов."""
-    #     if not isinstance(value, list):
-    #         raise serializers.ValidationError(
-    #             "Ингредиенты должны быть списком объектов."
-    #         )
-
-    #     seen_ids = set()
-    #     for item in value:
-    #         if "id" not in item or "amount" not in item:
-    #             raise serializers.ValidationError(
-    #                 "Каждый ингредиент должен содержать поля 'id' и 'amount'."
-    #             )
-    #         if item["id"] in seen_ids:
-    #             raise serializers.ValidationError(
-    #                 f"Ингредиент с ID {item['id']} указан повторно."
-    #             )
-    #         seen_ids.add(item["id"])
-    #     return value
-    # def validate_ingredients(self, value):
-    #     """Проверка уникальности ингредиентов."""
-    #     if not value:
-    #         raise serializers.ValidationError(
-    #             "Добавьте хотя бы один ингредиент")
-
-    #     ingredients = [item['ingredient'].id for item in value]
-    #     if len(ingredients) != len(set(ingredients)):
-    #         raise serializers.ValidationError(
-    #             "Ингредиенты не должны повторяться")
-
-    #     return value
     def validate_ingredients(self, value):
         """Проверка уникальности ингредиентов."""
         logger.debug(f"Received ingredients data: {value}")
-        ingredients = [item["ingredient"]["id"] for item in value]
-        if len(ingredients) != len(set(ingredients)):
+
+        # Получаем список ID ингредиентов из входных данных
+        ingredient_ids = [item['ingredient'].id for item in value]
+
+        if len(ingredient_ids) != len(set(ingredient_ids)):
             raise serializers.ValidationError(
-                "Ингредиенты не должны повторяться.")
+                "Ингредиенты не должны повторяться."
+            )
         return value
 
-    # def create(self, validated_data):
-    #     """Создание рецепта с ингредиентами."""
-    #     ingredients_data = validated_data.pop('ingredients')
-    #     tags = validated_data.pop('tags')
-    #     recipe = Recipe.objects.create(**validated_data)
-    #     recipe.tags.set(tags)
-
-    #     ingredients = [
-    #         IngredientInRecipe(
-    #             recipe=recipe,
-    #             ingredient=item['ingredient'],
-    #             amount=item['amount']
-    #         ) for item in ingredients_data
-    #     ]
-    #     IngredientInRecipe.objects.bulk_create(ingredients)
-
-    #     return recipe
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
+        logger.debug(f"Создание рецепта с ингредиентами: {validated_data}")
         ingredients_data = validated_data.pop("ingredients")
         tags = validated_data.pop("tags")
 

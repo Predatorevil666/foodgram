@@ -13,6 +13,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
+from djoser.serializers import SetPasswordSerializer
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import filters, mixins, permissions, status, viewsets
@@ -38,6 +39,21 @@ class CustomUserViewSet(DjoserUserViewSet):
         elif self.action == 'manage_avatar':
             return AvatarSerializer
         return CustomUserSerializer
+
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=(IsAuthenticated,),
+    )
+    def set_password(self, request):
+        serializer = SetPasswordSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+        self.request.user.set_password(serializer.data["new_password"])
+        self.request.user.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=False,
@@ -109,7 +125,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    filterset_fields = ['tags', 'author', 'cooking_time']
+    # filterset_fields = ['tags', 'author', 'cooking_time']
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора. """
@@ -120,6 +136,25 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Сохранение рецепта с привязкой к автору."""
         serializer.save(author=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        """Создание рецепта."""
+        logger.debug(f"Создание рецепта. Данные: {request.data}")
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+
+        read_serializer = RecipeReadSerializer(
+            serializer.instance,
+            context=self.get_serializer_context()
+        )
+
+        # headers = self.get_success_headers(serializer.data)
+        return Response(
+            read_serializer.data,
+            status=status.HTTP_201_CREATED,
+            # headers=headers
+        )
 
     def retrieve(self, request, *args, **kwargs):
         """Получение подробной информации о рецепте."""

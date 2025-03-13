@@ -1,8 +1,10 @@
+import logging
 from django.db.models import Q
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
                                            FilterSet, NumberFilter)
 
 from recipes.models import Ingredient, Recipe
+logger = logging.getLogger(__name__)
 
 
 class IngredientFilter(FilterSet):
@@ -56,3 +58,4 @@ class RecipeFilter(FilterSet):
                 q_objects |= Q(tags__slug=tag)
             queryset = queryset.filter(q_objects).distinct()
         return queryset
+        

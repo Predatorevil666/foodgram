@@ -161,6 +161,7 @@ class IngredientSerializer(serializers.ModelSerializer):
 
 class IngredientInRecipeSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
+        source='ingredient',
         queryset=Ingredient.objects.all(),
     )
     name = serializers.ReadOnlyField(
@@ -177,34 +178,34 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         model = IngredientInRecipe
         fields = ('id', 'name', 'measurement_unit', 'amount')
 
-    # def to_internal_value(self, data):
-    #     """Преобразуем входные данные для модели."""
-    #     data["ingredient"] = data.get("id")
-    #     return super().to_internal_value(data)
-    # def to_internal_value(self, data):
-    #     return {
-    #         'ingredient': data['id'],  # Преобразуем 'id' в 'ingredient'
-    #         'amount': data['amount']
-    #     }
     def to_internal_value(self, data):
         try:
-            ingredient = Ingredient.objects.get(id=data['id'])
+            # Проверка наличия обязательных полей
+            ingredient_id = data.get('id')
+            amount = data.get('amount')
+            
+            if not ingredient_id or not amount:
+                raise KeyError()
+                
+            return {
+                'ingredient': Ingredient.objects.get(id=ingredient_id),
+                'amount': amount
+            }
         except Ingredient.DoesNotExist:
-            raise serializers.ValidationError({"id": "Ингредиент не найден."})
-        logger.debug(f"Получение обьекта Ингредиента: {ingredient}")
-        return {
-            'ingredient': ingredient,  # Возвращаем объект Ingredient
-            'amount': data['amount']
-        }
+            raise serializers.ValidationError({'id': 'Ингредиент не найден'})
+        except KeyError:
+            raise serializers.ValidationError({
+                'id': 'Обязательное поле',
+                'amount': 'Обязательное поле'
+            })
 
     def to_representation(self, instance):
-        """Преобразуем данные для отображения."""
-        representation = super().to_representation(instance)
-        representation['id'] = instance.ingredient.id
-        representation['name'] = instance.ingredient.name
-        representation['measurement_unit'] = instance.ingredient.measurement_unit
-        representation['amount'] = instance.amount
-        return representation
+        return {
+            'id': instance.ingredient.id,
+            'name': instance.ingredient.name,
+            'measurement_unit': instance.ingredient.measurement_unit,
+            'amount': instance.amount
+        }
 
     def validate_ingredient(self, value):
         if not value:
@@ -218,13 +219,11 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     ingredients = IngredientInRecipeSerializer(
         many=True,
         required=True,
-        allow_empty=False
     )
     tags = serializers.PrimaryKeyRelatedField(
         queryset=Tag.objects.all(),
         many=True,
         required=True,
-        allow_empty=False
     )
     image = Base64ImageField()
     cooking_time = serializers.IntegerField(
@@ -286,45 +285,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
         return value
 
-    # def validate(self, data):
-    #     # Проверка наличия полей при любом методе запроса
-    #     if 'ingredients' not in data:
-    #         raise serializers.ValidationError(
-    #             {"ingredients": "Это поле обязательно."})
-    #     if 'tags' not in data:
-    #         raise serializers.ValidationError(
-    #             {"tags": "Это поле обязательно."})
-    #     return data
-
-    # def validate_tags(self, value):
-    #     """Проверка тегов."""
-    #     if not value:
-    #         raise serializers.ValidationError("Добавьте хотя бы один тег")
-
-    #     unique_tags = set(value)
-    #     if len(unique_tags) != len(value):
-    #         raise serializers.ValidationError("Теги не должны повторяться")
-
-    #     if len(value) > 4:
-    #         raise serializers.ValidationError("Максимум 4 тега.")
-    #     return value
-
-    # def validate_ingredients(self, value):
-    #     """Проверка уникальности ингредиентов."""
-    #     logger.debug(f"Received ingredients data: {value}")
-    #     if not value:
-    #         raise serializers.ValidationError(
-    #             "Необходимо указать хотя бы один ингредиент")
-    #     # Получаем список ID ингредиентов из входных данных
-    #     ingredient_ids = [item['ingredient'] for item in value]
-
-    #     logger.debug(f"Получение ингредиентов по id: {ingredient_ids}")
-    #     if len(ingredient_ids) != len(set(ingredient_ids)):
-    #         raise serializers.ValidationError(
-    #             "Ингредиенты не должны повторяться."
-    #         )
-    #     return value
-
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
         logger.debug(f"Создание рецепта с ингредиентами: {validated_data}")
@@ -356,6 +316,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
         instance = super().update(instance, validated_data)
         instance.tags.set(tags)
 
+        # Удаляем старые ингредиенты и создаем новые
         instance.ingredient_list.all().delete()
         ingredients = [
             IngredientInRecipe(
@@ -365,7 +326,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             ) for item in ingredients_data
         ]
         IngredientInRecipe.objects.bulk_create(ingredients)
-
         return instance
 
 
@@ -376,7 +336,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         many=True,
         source='ingredient_list'
     )
-    tags = TagSerializer(many=True)
+    tags = TagSerializer(many=True, read_only=True)
     image = Base64ImageField(use_url=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()

@@ -120,12 +120,15 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
 
-    queryset = Recipe.objects.all()
+    queryset = Recipe.objects.prefetch_related(
+        'ingredient_list__ingredient',
+        'tags',
+        'author'
+    ).all()
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
-    # filterset_fields = ['tags', 'author', 'cooking_time']
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора. """
@@ -138,7 +141,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def update(self, request, *args, **kwargs):
-        """Проверьте метод updateю"""
+        """Проверьте метод update."""
         try:
             return super().update(request, *args, **kwargs)
         except Exception as e:

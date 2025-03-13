@@ -137,18 +137,29 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Сохранение рецепта с привязкой к автору."""
         serializer.save(author=self.request.user)
 
+    def update(self, request, *args, **kwargs):
+        """Проверьте метод updateю"""
+        try:
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error updating recipe: {str(e)}")
+            return Response(
+                {"error": "Ошибка при обновлении рецепта"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     def create(self, request, *args, **kwargs):
         """Создание рецепта."""
         logger.debug(f"Создание рецепта. Данные: {request.data}")
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-
+        # logger.debug(f"Полученный сериализатор: {serializer}")
         read_serializer = RecipeReadSerializer(
             serializer.instance,
             context=self.get_serializer_context()
         )
-
+        logger.debug(f"Сериализатор на выходе: {read_serializer}")
         # headers = self.get_success_headers(serializer.data)
         return Response(
             read_serializer.data,

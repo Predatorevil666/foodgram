@@ -57,5 +57,6 @@ class RecipeFilter(FilterSet):
             for tag in tags:
                 q_objects |= Q(tags__slug=tag)
             queryset = queryset.filter(q_objects).distinct()
+        logger.debug(f"Отфильтрованные рецепты: {queryset}")
         return queryset
         

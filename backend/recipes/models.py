@@ -1,6 +1,6 @@
 import uuid
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
 from django.db import models
 from recipes.constants import (GENERATE_LENGTH, INGREDIENT_LENGTH,
                                MAX_COOKING_TIME, MAX_INGREDIENT_AMOUNT,
@@ -24,7 +24,7 @@ class Tag(models.Model):
     slug = models.SlugField(
         max_length=TAG_LENGTH,
         verbose_name='Уникальный слаг',
-        unique=True
+        unique=True,
     )
 
     class Meta:

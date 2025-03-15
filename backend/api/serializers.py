@@ -10,6 +10,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
 from rest_framework import serializers
 from users.models import Subscription
 
+
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
@@ -183,10 +184,10 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
             # Проверка наличия обязательных полей
             ingredient_id = data.get('id')
             amount = data.get('amount')
-            
+
             if not ingredient_id or not amount:
                 raise KeyError()
-                
+
             return {
                 'ingredient': Ingredient.objects.get(id=ingredient_id),
                 'amount': amount
@@ -234,7 +235,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Recipe
         fields = (
-            'id', 'name', 'text', 'cooking_time',
+            'name', 'text', 'cooking_time',
             'ingredients', 'tags', 'image', 'author'
         )
         read_only_fields = ('author', 'slug')
@@ -310,6 +311,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Обновление существующего рецепта."""
+        logger.debug(f"Обновление рецепта, входные данные: {instance}")
+        logger.debug(
+            f"Обновление рецепта, валидированные данные: {validated_data}")
         ingredients_data = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 
@@ -360,12 +364,17 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         return is_item_in_user_list(obj, ShoppingCart, user)
 
-    def get_short_link(self, obj):
-        """Генерация короткой ссылки."""
-        request = self.context.get('request')
-        if request:
-            return request.build_absolute_uri(f'/recipes/{obj.slug}/')
-        return None
+    # def get_short_link(self, obj):
+    #     """Генерация короткой ссылки."""
+    #     request = self.context.get('request')
+    #     if request and obj.slug:
+    #         return request.build_absolute_uri(f'/recipes/{obj.slug}/')
+    #     return None
+
+    # def to_representation(self, instance):
+    #     representation = super().to_representation(instance)
+    #     representation['short-link'] = representation.pop('short_link', None)
+    #     return representation
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
@@ -452,3 +461,21 @@ class AvatarSerializer(serializers.ModelSerializer):
             )
             if instance.avatar else None
         }
+
+
+class RecipeShortLinkSerializer(serializers.ModelSerializer):
+    short_link = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Recipe
+        fields = ('short_link',)
+
+    def get_short_link(self, obj):
+        request = self.context.get('request')
+        if request and obj.slug:
+            return request.build_absolute_uri(f'/recipes/{obj.slug}/')
+        return None
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        return {"short-link": representation["short_link"]}

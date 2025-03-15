@@ -190,6 +190,11 @@ LOGGING = {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
         },
+        'django.utils.autoreload': {
+            'handlers': ['console', 'file'],
+            'level': 'CRITICAL',
+            'propagate': False,
+        },
         'api': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
@@ -205,5 +210,6 @@ LOGGING = {
             'level': 'DEBUG',
             'propagate': False,
         },
+        
     },
 }

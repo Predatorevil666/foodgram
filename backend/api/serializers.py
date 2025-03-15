@@ -185,20 +185,23 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
             ingredient_id = data.get('id')
             amount = data.get('amount')
 
-            if not ingredient_id or not amount:
-                raise KeyError()
+            if not ingredient_id:
+                raise serializers.ValidationError({'id': 'Обязательное поле'})
+            
+            ingredient = Ingredient.objects.get(id=ingredient_id)
 
             return {
-                'ingredient': Ingredient.objects.get(id=ingredient_id),
+                'ingredient': ingredient,
                 'amount': amount
             }
         except Ingredient.DoesNotExist:
-            raise serializers.ValidationError({'id': 'Ингредиент не найден'})
-        except KeyError:
-            raise serializers.ValidationError({
-                'id': 'Обязательное поле',
-                'amount': 'Обязательное поле'
-            })
+            raise serializers.ValidationError(
+                {'id': f'Ингредиент с ID {ingredient_id} не найден'}
+            )
+        except KeyError as e:
+            raise serializers.ValidationError(
+                {str(e): 'Это поле обязательно'}
+            )
 
     def to_representation(self, instance):
         return {
@@ -288,7 +291,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
-        logger.debug(f"Создание рецепта с ингредиентами: {validated_data}")
+        # logger.debug(f"Создание рецепта с ингредиентами: {validated_data}")
         ingredients_data = validated_data.pop("ingredients")
         tags = validated_data.pop("tags")
 
@@ -311,9 +314,9 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Обновление существующего рецепта."""
-        logger.debug(f"Обновление рецепта, входные данные: {instance}")
-        logger.debug(
-            f"Обновление рецепта, валидированные данные: {validated_data}")
+        # logger.debug(f"Обновление рецепта, входные данные: {instance}")
+        # logger.debug(
+        #     f"Обновление рецепта, валидированные данные: {validated_data}")
         ingredients_data = validated_data.pop('ingredients')
         tags = validated_data.pop('tags')
 

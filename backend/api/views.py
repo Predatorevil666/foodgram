@@ -143,7 +143,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
         serializer.save(author=self.request.user)
 
     def update(self, request, *args, **kwargs):
-        """Проверьте метод update."""
+        """Проверка метода update."""
         try:
             return super().update(request, *args, **kwargs)
         except Exception as e:
@@ -165,11 +165,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
             context=self.get_serializer_context()
         )
         logger.debug(f"Сериализатор на выходе: {read_serializer}")
-        # headers = self.get_success_headers(serializer.data)
         return Response(
             read_serializer.data,
             status=status.HTTP_201_CREATED,
-            # headers=headers
         )
 
     def retrieve(self, request, *args, **kwargs):

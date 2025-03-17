@@ -9,7 +9,7 @@ from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
 from users.models import Subscription
-
+from recipes.constants import MIN_INGREDIENT_AMOUNT
 
 logger = logging.getLogger(__name__)
 
@@ -172,12 +172,19 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
         source='ingredient.measurement_unit'
     )
     amount = serializers.IntegerField(
-        min_value=1
+        min_value=MIN_INGREDIENT_AMOUNT
     )
 
     class Meta:
         model = IngredientInRecipe
         fields = ('id', 'name', 'measurement_unit', 'amount')
+
+    def validate_amount(self, value):
+        if value < 1:
+            raise serializers.ValidationError(
+                "Количество ингредиента должно быть не менее 1"
+            )
+        return value
 
     def to_internal_value(self, data):
         try:
@@ -281,6 +288,12 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
     def validate_ingredients(self, value):
         """Проверка ингредиентов."""
         self._validate_not_empty(value, "ingredients")
+        # Добавляем проверку количества для каждого ингредиента
+        for ingredient in value:
+            if ingredient.get('amount', 0) < 1:
+                raise serializers.ValidationError({
+                    "amount": "Количество ингредиента должно быть не менее 1"
+                })
 
         ingredient_ids = [item['ingredient'].id for item in value]
         if len(ingredient_ids) != len(set(ingredient_ids)):
@@ -366,6 +379,7 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         """Метод проверки на присутствие в корзине."""
         user = self.context['request'].user
         return is_item_in_user_list(obj, ShoppingCart, user)
+    
 
     # def get_short_link(self, obj):
     #     """Генерация короткой ссылки."""
@@ -405,12 +419,13 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = Subscription
         fields = (
             'id', 'email', 'username', 'first_name', 'last_name',
-            'is_subscribed', 'recipes', 'recipes_count'
+            'is_subscribed', 'recipes', 'recipes_count', 'avatar',
         )
 
     def get_is_subscribed(self, obj):
@@ -433,6 +448,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.author.recipes.count()
+    
+    def get_avatar(self, obj):
+        # Возвращаем URL аватара или null, если аватар отсутствует
+        if obj.author.avatar:
+            return self.context['request'].build_absolute_uri(obj.author.avatar.url)
+        return None
 
 
 class AddFavoritesSerializer(serializers.ModelSerializer):
@@ -441,7 +462,7 @@ class AddFavoritesSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Recipe
-        fields = ('name', 'image', 'cooking_time')
+        fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class AvatarSerializer(serializers.ModelSerializer):

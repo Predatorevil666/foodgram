@@ -194,7 +194,7 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
 
             if not ingredient_id:
                 raise serializers.ValidationError({'id': 'Обязательное поле'})
-            
+
             ingredient = Ingredient.objects.get(id=ingredient_id)
 
             return {
@@ -379,7 +379,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         """Метод проверки на присутствие в корзине."""
         user = self.context['request'].user
         return is_item_in_user_list(obj, ShoppingCart, user)
-    
 
     # def get_short_link(self, obj):
     #     """Генерация короткой ссылки."""
@@ -448,7 +447,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_recipes_count(self, obj):
         return obj.author.recipes.count()
-    
+
     def get_avatar(self, obj):
         # Возвращаем URL аватара или null, если аватар отсутствует
         if obj.author.avatar:
@@ -456,9 +455,16 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return None
 
 
-class AddFavoritesSerializer(serializers.ModelSerializer):
-    """Сериализатор для добавления в избранное по модели Recipe."""
-    image = Base64ImageField()
+class FavoriteSerializer(serializers.ModelSerializer):
+    """Сериализатор для избранного."""
+
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class ShoppingCartSerializer(serializers.ModelSerializer):
+    """Сериализатор для списка покупок."""
 
     class Meta:
         model = Recipe

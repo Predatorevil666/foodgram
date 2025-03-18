@@ -3,12 +3,14 @@ import logging
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (AddFavoritesSerializer, AvatarSerializer,
+from api.serializers import (AvatarSerializer,
                              CustomUserCreateSerializer, CustomUserSerializer,
+                             FavoriteSerializer,
                              IngredientSerializer, RecipeReadSerializer,
                              RecipeShortLinkSerializer, RecipeWriteSerializer,
+                             ShoppingCartSerializer,
                              SubscriptionSerializer, TagSerializer)
-from api.utils import check_if_exists
+from api.utils import get_recipe, manage_user_list
 from django.contrib.auth import get_user_model
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -211,41 +213,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def favorite(self, request, pk):
         """Метод для управления избранным."""
         user = request.user
-        try:
-            recipe_id = int(pk)
-        except ValueError:
-            return Response(
-                {'error': 'ID рецепта должно быть числом.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        try:
-            recipe = Recipe.objects.get(id=recipe_id)
-        except Recipe.DoesNotExist:
-            return Response(
-                {'errors': 'Рецепт не найден.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipe, error_response = get_recipe(pk)
+        if error_response:
+            return error_response
 
-        if request.method == 'POST':
-            if check_if_exists(Favorite, user, recipe):
-                return Response(
-                    {'errors': f'Повторно "{recipe.name}" добавить нельзя, '
-                     f'он уже есть в избранном у пользователя.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            Favorite.objects.create(user=user, recipe=recipe)
-            serializer = AddFavoritesSerializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            obj = Favorite.objects.filter(user=user, recipe=recipe)
-            if obj.exists():
-                obj.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response(
-                {'errors': f'В избранном рецепта {recipe.name} нет'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return manage_user_list(
+            model=Favorite,
+            serializer_class=FavoriteSerializer,
+            user=user,
+            recipe=recipe,
+            request_method=request.method
+        )
 
     @action(
         detail=True,
@@ -256,38 +234,18 @@ class RecipesViewSet(viewsets.ModelViewSet):
     )
     def shopping_cart(self, request, pk=None):
         """Метод для управления списком покупок."""
-
         user = request.user
-        try:
-            recipe_id = int(pk)
-            recipe = Recipe.objects.get(pk=recipe_id)
-        except (ValueError, Recipe.DoesNotExist):
-            return Response(
-                {'error': 'Неверный ID рецепта'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipe, error_response = get_recipe(pk)
+        if error_response:
+            return error_response
 
-        if request.method == 'POST':
-            if check_if_exists(ShoppingCart, user, recipe):
-                return Response(
-                    {'errors': f'Повторно "{recipe.name}" добавить нельзя, '
-                     f'он уже есть в списке покупок.'},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            ShoppingCart.objects.create(user=user, recipe=recipe)
-            serializer = AddFavoritesSerializer(recipe)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-        if request.method == 'DELETE':
-            obj = ShoppingCart.objects.filter(user=user, recipe__id=pk)
-            if obj.exists():
-                obj.delete()
-                return Response(status=status.HTTP_204_NO_CONTENT)
-            return Response(
-                {'errors': f'Нельзя удалить рецепт - \"{recipe.name}\", '
-                 f'которого нет в списке покупок.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        return manage_user_list(
+            model=ShoppingCart,
+            serializer_class=ShoppingCartSerializer,
+            user=user,
+            recipe=recipe,
+            request_method=request.method
+        )
 
     @staticmethod
     def ingredients_to_txt(ingredients):

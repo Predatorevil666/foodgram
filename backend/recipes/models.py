@@ -1,6 +1,6 @@
 import uuid
 from django.contrib.auth import get_user_model
-from django.core.validators import MaxValueValidator, MinValueValidator, RegexValidator
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from recipes.constants import (GENERATE_LENGTH, INGREDIENT_LENGTH,
                                MAX_COOKING_TIME, MAX_INGREDIENT_AMOUNT,
@@ -8,6 +8,7 @@ from recipes.constants import (GENERATE_LENGTH, INGREDIENT_LENGTH,
                                MIN_INGREDIENT_AMOUNT, RECIPE_LENGTH,
                                RECIPE_NAME_LENGTH, SHORT_LINK, TAG_LENGTH,
                                TAG_NAME_LENGTH)
+
 
 User = get_user_model()
 
@@ -89,6 +90,7 @@ class Recipe(models.Model):
         verbose_name='Теги',
         related_name='recipes'
     )
+
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления',
         validators=[

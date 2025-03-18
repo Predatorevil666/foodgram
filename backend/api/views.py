@@ -12,7 +12,8 @@ from api.serializers import (AvatarSerializer,
                              SubscriptionSerializer, TagSerializer)
 from api.utils import get_recipe, manage_user_list
 from django.contrib.auth import get_user_model
-from django.db.models import Sum
+# from django.db.models import Sum
+from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -25,6 +26,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from users.models import Subscription
+
 
 logger = logging.getLogger(__name__)
 
@@ -124,15 +126,53 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
 
-    queryset = Recipe.objects.prefetch_related(
-        'ingredient_list__ingredient',
-        'tags',
-        'author'
-    ).all()
+    # queryset = Recipe.objects.prefetch_related(
+    #     'ingredient_list__ingredient',
+    #     'tags',
+    #     'author'
+    # ).all()
+
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = CustomPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
+
+    def get_queryset(self):
+        """Получение списка рецептов с учетом подписок и избранного."""
+        user = self.request.user
+        recipes = Recipe.objects.prefetch_related(
+            'ingredient_list__ingredient',
+            'tags',
+            'author'
+        ).all()
+
+        # queryset = self.filter_queryset(recipes)
+        # if user.is_authenticated:
+        #     queryset = queryset.annotate(
+        #         is_favorited=Exists(Favorite.objects.filter(
+        #             user=user, recipe=OuterRef('pk'))),
+        #         is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+        #             user=user, recipe=OuterRef('pk')))
+        #     )
+        # else:
+        #     queryset = queryset.annotate(
+        #         is_favorited=Value(False, output_field=BooleanField()),
+        #         is_in_shopping_cart=Value(False, output_field=BooleanField())
+        #     )
+
+        # return queryset
+
+        if user.is_authenticated:
+            return recipes.annotate(
+                is_favorited=Exists(Favorite.objects.filter(
+                    user=user, recipe=OuterRef('pk'))),
+                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                    user=user, recipe=OuterRef('pk')))
+            )
+        return recipes.annotate(
+            is_favorited=Value(False, output_field=BooleanField()),
+            is_in_shopping_cart=Value(False, output_field=BooleanField())
+        )
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора. """
@@ -318,7 +358,7 @@ class SubscriptionViewSet(
     def subscribe(self, request, pk=None):
         """Обработка подписки/отписки."""
         author = get_object_or_404(User, id=pk)
-
+        user = request.user
         if request.method == 'POST':
             if request.user == author:
                 return Response(
@@ -326,7 +366,7 @@ class SubscriptionViewSet(
                     status=status.HTTP_400_BAD_REQUEST
                 )
             if Subscription.objects.filter(
-                user=request.user,
+                user=user,
                 author=author
             ).exists():
                 return Response(
@@ -334,7 +374,7 @@ class SubscriptionViewSet(
                     status=status.HTTP_400_BAD_REQUEST
                 )
             subscription = Subscription.objects.create(
-                user=request.user,
+                user=user,
                 author=author
             )
             serializer = SubscriptionSerializer(
@@ -344,6 +384,14 @@ class SubscriptionViewSet(
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         if request.method == 'DELETE':
-            Subscription.objects.filter(
-                user=request.user, author=author).delete()
+            subscription = Subscription.objects.filter(
+                user=user,
+                author=author
+            ).first()
+            if not subscription:
+                return Response(
+                    {'errors': 'Вы не подписаны на этого автора.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            subscription.delete()
             return Response(status=status.HTTP_204_NO_CONTENT)

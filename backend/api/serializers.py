@@ -307,14 +307,26 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
+        ingredients_data = validated_data.pop("ingredients")
+        tags = validated_data.pop("tags")
         recipe = Recipe.objects.create(**validated_data)
-        processing_recipe_ingredients_and_tags(recipe, validated_data)
+        processing_recipe_ingredients_and_tags(
+            recipe,
+            ingredients_data,
+            tags
+        )
         return recipe
 
     def update(self, instance, validated_data):
         """Обновление существующего рецепта."""
+        ingredients_data = validated_data.pop('ingredients')
+        tags = validated_data.pop('tags')
         instance = super().update(instance, validated_data)
-        processing_recipe_ingredients_and_tags(instance, validated_data)
+        processing_recipe_ingredients_and_tags(
+            instance,
+            ingredients_data,
+            tags
+        )
         return instance
 
 

@@ -184,7 +184,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """Создание рецепта."""
         return create_or_update_recipe(
             RecipeWriteSerializer,
-            request)
+            request
+        )
 
     def update(self, request, *args, **kwargs):
         """Обновление рецепта."""

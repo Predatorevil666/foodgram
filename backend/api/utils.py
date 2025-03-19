@@ -104,8 +104,9 @@ def validate_not_empty(value, field_name):
 
 
 def processing_recipe_ingredients_and_tags(
-        recipe,
-        validated_data
+    recipe,
+    ingredients_data,
+    tags
 ):
     """
     Универсальная функция для обрабатки ингредиентов и тегов рецепта.
@@ -114,8 +115,6 @@ def processing_recipe_ingredients_and_tags(
     :param tags: Данные тегов.
     :return: recipe (обновленный экземпляр рецепта).
     """
-    ingredients_data = validated_data.pop("ingredients")
-    tags = validated_data.pop("tags")
     recipe.tags.set(tags)
     if recipe.pk:
         recipe.ingredient_list.all().delete()

@@ -1,8 +1,9 @@
 import base64
-import logging
 
 from api.constants import MAX_LENGTH
-from api.utils import is_item_in_user_list
+from api.utils import (is_item_in_user_list,
+                       validate_not_empty,
+                       processing_recipe_ingredients_and_tags)
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
@@ -11,7 +12,6 @@ from rest_framework import serializers
 from users.models import Subscription
 from recipes.constants import MIN_INGREDIENT_AMOUNT
 
-logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -186,30 +186,6 @@ class IngredientInRecipeSerializer(serializers.ModelSerializer):
             )
         return value
 
-    def to_internal_value(self, data):
-        try:
-            # Проверка наличия обязательных полей
-            ingredient_id = data.get('id')
-            amount = data.get('amount')
-
-            if not ingredient_id:
-                raise serializers.ValidationError({'id': 'Обязательное поле'})
-
-            ingredient = Ingredient.objects.get(id=ingredient_id)
-
-            return {
-                'ingredient': ingredient,
-                'amount': amount
-            }
-        except Ingredient.DoesNotExist:
-            raise serializers.ValidationError(
-                {'id': f'Ингредиент с ID {ingredient_id} не найден'}
-            )
-        except KeyError as e:
-            raise serializers.ValidationError(
-                {str(e): 'Это поле обязательно'}
-            )
-
     def to_representation(self, instance):
         return {
             'id': instance.ingredient.id,
@@ -254,13 +230,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
             'text': {'required': True}
         }
 
-    def _validate_not_empty(self, value, field_name):
-        """Проверка, что поле не пустое."""
-        if not value:
-            raise serializers.ValidationError(
-                {field_name: f"Добавьте хотя бы один {field_name}."})
-        return value
-
     def validate(self, data):
         """Общая валидация данных рецепта."""
         if 'ingredients' not in data:
@@ -273,7 +242,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def validate_tags(self, value):
         """Проверка тегов."""
-        self._validate_not_empty(value, "tags")
+        validate_not_empty(value, "tags")
 
         unique_tags = set(value)
         if len(unique_tags) != len(value):
@@ -287,8 +256,7 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def validate_ingredients(self, value):
         """Проверка ингредиентов."""
-        self._validate_not_empty(value, "ingredients")
-        # Добавляем проверку количества для каждого ингредиента
+        validate_not_empty(value, "ingredients")
         for ingredient in value:
             if ingredient.get('amount', 0) < 1:
                 raise serializers.ValidationError({
@@ -302,50 +270,51 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
         return value
 
+    # def create(self, validated_data):
+    #     """Создание рецепта с ингредиентами."""
+    #     ingredients_data = validated_data.pop("ingredients")
+    #     tags = validated_data.pop("tags")
+    #     recipe = Recipe.objects.create(**validated_data)
+    #     recipe.tags.set(tags)
+    #     ingredients = [
+    #         IngredientInRecipe(
+    #             recipe=recipe,
+    #             ingredient=item["ingredient"],
+    #             amount=item["amount"]
+    #         )
+    #         for item in ingredients_data
+    #     ]
+    #     IngredientInRecipe.objects.bulk_create(ingredients)
+
+    #     return recipe
+
+    # def update(self, instance, validated_data):
+    #     """Обновление существующего рецепта."""
+    #     ingredients_data = validated_data.pop('ingredients')
+    #     tags = validated_data.pop('tags')
+    #     instance = super().update(instance, validated_data)
+    #     instance.tags.set(tags)
+    #     instance.ingredient_list.all().delete()
+    #     ingredients = [
+    #         IngredientInRecipe(
+    #             recipe=instance,
+    #             ingredient=item['ingredient'],
+    #             amount=item['amount']
+    #         ) for item in ingredients_data
+    #     ]
+    #     IngredientInRecipe.objects.bulk_create(ingredients)
+    #     return instance
+
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
-        # logger.debug(f"Создание рецепта с ингредиентами: {validated_data}")
-        ingredients_data = validated_data.pop("ingredients")
-        tags = validated_data.pop("tags")
-
-        # Создаем рецепт
         recipe = Recipe.objects.create(**validated_data)
-        recipe.tags.set(tags)
-
-        # Создаем связи с ингредиентами
-        ingredients = [
-            IngredientInRecipe(
-                recipe=recipe,
-                ingredient=item["ingredient"],  # Объект Ingredient
-                amount=item["amount"]
-            )
-            for item in ingredients_data
-        ]
-        IngredientInRecipe.objects.bulk_create(ingredients)
-
+        processing_recipe_ingredients_and_tags(recipe, validated_data)
         return recipe
 
     def update(self, instance, validated_data):
         """Обновление существующего рецепта."""
-        # logger.debug(f"Обновление рецепта, входные данные: {instance}")
-        # logger.debug(
-        #     f"Обновление рецепта, валидированные данные: {validated_data}")
-        ingredients_data = validated_data.pop('ingredients')
-        tags = validated_data.pop('tags')
-
         instance = super().update(instance, validated_data)
-        instance.tags.set(tags)
-
-        # Удаляем старые ингредиенты и создаем новые
-        instance.ingredient_list.all().delete()
-        ingredients = [
-            IngredientInRecipe(
-                recipe=instance,
-                ingredient=item['ingredient'],  # Объект Ingredient
-                amount=item['amount']
-            ) for item in ingredients_data
-        ]
-        IngredientInRecipe.objects.bulk_create(ingredients)
+        processing_recipe_ingredients_and_tags(instance, validated_data)
         return instance
 
 
@@ -385,18 +354,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
         """Метод проверки на присутствие в корзине."""
         user = self.context['request'].user
         return is_item_in_user_list(obj, ShoppingCart, user)
-
-    # def get_short_link(self, obj):
-    #     """Генерация короткой ссылки."""
-    #     request = self.context.get('request')
-    #     if request and obj.slug:
-    #         return request.build_absolute_uri(f'/recipes/{obj.slug}/')
-    #     return None
-
-    # def to_representation(self, instance):
-    #     representation = super().to_representation(instance)
-    #     representation['short-link'] = representation.pop('short_link', None)
-    #     return representation
 
 
 class RecipeShortSerializer(serializers.ModelSerializer):
@@ -455,9 +412,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         return obj.author.recipes.count()
 
     def get_avatar(self, obj):
-        # Возвращаем URL аватара или null, если аватар отсутствует
         if obj.author.avatar:
-            return self.context['request'].build_absolute_uri(obj.author.avatar.url)
+            return self.context['request'].build_absolute_uri(
+                obj.author.avatar.url
+            )
         return None
 
 

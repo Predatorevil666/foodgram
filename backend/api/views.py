@@ -10,7 +10,7 @@ from api.serializers import (AvatarSerializer,
                              RecipeShortLinkSerializer, RecipeWriteSerializer,
                              ShoppingCartSerializer,
                              SubscriptionSerializer, TagSerializer)
-from api.utils import get_recipe, manage_user_list
+from api.utils import get_recipe, manage_user_list, create_or_update_recipe
 from django.contrib.auth import get_user_model
 # from django.db.models import Sum
 from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
@@ -175,41 +175,24 @@ class RecipesViewSet(viewsets.ModelViewSet):
         )
 
     def get_serializer_class(self):
-        """Метод для вызова определенного сериализатора. """
+        """Метод для вызова определенного сериализатора."""
         if self.action in ('create', 'update', 'partial_update'):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
-    def perform_create(self, serializer):
-        """Сохранение рецепта с привязкой к автору."""
-        serializer.save(author=self.request.user)
-
-    def update(self, request, *args, **kwargs):
-        """Проверка метода update."""
-        try:
-            return super().update(request, *args, **kwargs)
-        except Exception as e:
-            logger.error(f"Error updating recipe: {str(e)}")
-            return Response(
-                {"error": "Ошибка при обновлении рецепта"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
     def create(self, request, *args, **kwargs):
         """Создание рецепта."""
-        logger.debug(f"Создание рецепта. Данные: {request.data}")
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        # logger.debug(f"Полученный сериализатор: {serializer}")
-        read_serializer = RecipeReadSerializer(
-            serializer.instance,
-            context=self.get_serializer_context()
-        )
-        logger.debug(f"Сериализатор на выходе: {read_serializer}")
-        return Response(
-            read_serializer.data,
-            status=status.HTTP_201_CREATED,
+        return create_or_update_recipe(
+            RecipeWriteSerializer,
+            request)
+
+    def update(self, request, *args, **kwargs):
+        """Обновление рецепта."""
+        instance = self.get_object()
+        return create_or_update_recipe(
+            RecipeWriteSerializer,
+            request,
+            instance
         )
 
     def retrieve(self, request, *args, **kwargs):

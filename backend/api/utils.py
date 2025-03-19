@@ -1,6 +1,6 @@
 from rest_framework.response import Response
-from rest_framework import status
-from recipes.models import Recipe
+from rest_framework import status, serializers
+from recipes.models import IngredientInRecipe, Recipe
 
 
 def is_item_in_user_list(obj, model, user):
@@ -55,3 +55,77 @@ def get_recipe(pk):
             {'errors': 'Рецепт не найден.'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+def create_or_update_recipe(serializer, request, instance=None):
+    """
+    Универсальная функция для создания или обновления рецепта.
+    :param serializer: Сериализатор для создания/обновления (
+    RecipeWriteSerializer
+    ).
+    :param request: Запрос от пользователя.
+    :param instance: Экземпляр рецепта (
+    для обновления
+    ). Если None, создается новый рецепт.
+    :return: Ответ с данными рецепта в формате RecipeReadSerializer.
+    """
+    from api.serializers import RecipeReadSerializer
+    if instance:
+        serializer_instance = serializer(
+            instance, data=request.data, partial=False)
+    else:
+        serializer_instance = serializer(data=request.data)
+
+    serializer_instance.is_valid(raise_exception=True)
+    serializer_instance.save(author=request.user)
+    read_serializer = RecipeReadSerializer(
+        serializer_instance.instance,
+        context={'request': request}
+    )
+    return Response(
+        read_serializer.data,
+        status=status.HTTP_201_CREATED if not instance else status.HTTP_200_OK
+    )
+
+
+def validate_not_empty(value, field_name):
+    """
+    Универсальная функция для проверки, что поле не пустое.
+    :param value: Значение для проверки.
+    :param field_name: Название поля (для сообщения об ошибке).
+    :return: value, если оно не пустое.
+    :raises: serializers.ValidationError, если значение пустое.
+    """
+    if not value:
+        raise serializers.ValidationError(
+            {field_name: f"Добавьте хотя бы один {field_name}."}
+        )
+    return value
+
+
+def processing_recipe_ingredients_and_tags(
+        recipe,
+        validated_data
+):
+    """
+    Универсальная функция для обрабатки ингредиентов и тегов рецепта.
+    :param recipe: Экземпляр рецепта (созданный или обновляемый).
+    :param ingredients_data: Данные ингредиентов.
+    :param tags: Данные тегов.
+    :return: recipe (обновленный экземпляр рецепта).
+    """
+    ingredients_data = validated_data.pop("ingredients")
+    tags = validated_data.pop("tags")
+    recipe.tags.set(tags)
+    if recipe.pk:
+        recipe.ingredient_list.all().delete()
+    ingredients = [
+        IngredientInRecipe(
+            recipe=recipe,
+            ingredient=item['ingredient'],
+            amount=item['amount']
+        ) for item in ingredients_data
+    ]
+    IngredientInRecipe.objects.bulk_create(ingredients)
+
+    return recipe

@@ -339,14 +339,14 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     )
     tags = TagSerializer(many=True, read_only=True)
     image = Base64ImageField(use_url=True)
-    # is_favorited = serializers.SerializerMethodField()
-    # is_in_shopping_cart = serializers.SerializerMethodField()
-    is_favorited = serializers.BooleanField(
-        default=False
-    )
-    is_in_shopping_cart = serializers.BooleanField(
-        default=False
-    )
+    is_favorited = serializers.SerializerMethodField()
+    is_in_shopping_cart = serializers.SerializerMethodField()
+    # is_favorited = serializers.BooleanField(
+    #     default=False
+    # )
+    # is_in_shopping_cart = serializers.BooleanField(
+    #     default=False
+    # )
     author = CustomUserSerializer(read_only=True)
 
     class Meta:

@@ -1,7 +1,7 @@
 import logging
 from django.db.models import Q
 from django_filters.rest_framework import (BooleanFilter, CharFilter,
-                                           FilterSet, NumberFilter, filters)
+                                           FilterSet, NumberFilter)
 
 from recipes.models import Ingredient, Recipe, Tag
 logger = logging.getLogger(__name__)
@@ -155,8 +155,9 @@ class IngredientFilter(FilterSet):
 #         """Фильтрация рецептов по тегам."""
 #         tags = self.request.GET.getlist('tags')
 #         return queryset.filter(tags__slug__in=tags).distinct()
-    
+
 class RecipeFilter(FilterSet):
+    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n')
     author = NumberFilter(field_name='author__id')
     # tags = CharFilter(field_name='tags__slug', lookup_expr='iexact')
     # tags = filters.ModelMultipleChoiceFilter(
@@ -164,28 +165,31 @@ class RecipeFilter(FilterSet):
     #     to_field_name='slug',
     #     queryset=Tag.objects.all(),
     # )
-    tags = filters.CharFilter(method='filter_tags')
-    is_favorited = filters.NumberFilter(
+    tags = CharFilter(field_name='tags__slug', method='filter_tags')
+    is_favorited = NumberFilter(
         field_name='is_favorited')
-    is_in_shopping_cart = filters.NumberFilter(
+    is_in_shopping_cart = NumberFilter(
         field_name='is_in_shopping_cart')
+    # is_favorited = filters.BooleanFilter()
+    # is_in_shopping_cart = filters.BooleanFilter()
 
-    def filter_tags(self, queryset, name, value):
-        """Фильтрация по тегам с обработкой '#'."""
+    # def filter_tags(self, queryset, name, value):
+    #     """Фильтрация по тегам с обработкой '#'."""
+    #     print('22222222222222222222222222222222222222222222222222222222\n\n\n\n\n\n\n\n\n')
+    #     # print(f'Queryset: {queryset.__dict__}')
+    #     tags = self.request.GET.getlist('tags')
+    #     if tags:
+    #         q_objects = Q()
+    #         for tag in tags:
+    #             q_objects |= Q(tags__slug=tag)
+    #         queryset = queryset.filter(q_objects).distinct()
+    #     return queryset
+    
+    def filter_by_tags(self, queryset, name, value):
+        """Фильтрация рецептов по тегам."""
         tags = self.request.GET.getlist('tags')
-        if tags:
-            # Очищаем теги от #
-            cleaned_tags = [tag.lstrip('#') for tag in tags]
-            
-            # Создаем Q-объекты для каждого тега
-            q_objects = Q()
-            for tag in cleaned_tags:
-                q_objects |= Q(tags__slug=tag)
-            
-            # Применяем фильтр
-            queryset = queryset.filter(q_objects).distinct()
-        
-        return queryset
+        logger.debug(f"Теги из запроса: {tags}")
+        return queryset.filter(tags__slug__in=tags).distinct()
 
     class Meta:
         model = Recipe

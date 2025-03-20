@@ -125,7 +125,7 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
-
+    # queryset = Recipe.objects.all()
     # queryset = Recipe.objects.prefetch_related(
     #     'ingredient_list__ingredient',
     #     'tags',
@@ -139,13 +139,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Получение списка рецептов с учетом подписок и избранного."""
+        # queryset = super().get_queryset()
+        logger.debug(f"Фильтр подключён: {self.filterset_class}")
         user = self.request.user
+        recipes = Recipe.objects.select_related(
+            'author').prefetch_related('tags', 'ingredients')
         recipes = Recipe.objects.prefetch_related(
             'ingredient_list__ingredient',
             'tags',
             'author'
         ).all()
-
+        # logger.debug(f"Мой кверисет: {recipes}")
         # queryset = self.filter_queryset(recipes)
         # if user.is_authenticated:
         #     queryset = queryset.annotate(

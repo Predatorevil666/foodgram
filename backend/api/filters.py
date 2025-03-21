@@ -157,40 +157,55 @@ class IngredientFilter(FilterSet):
 #         return queryset.filter(tags__slug__in=tags).distinct()
 
 class RecipeFilter(FilterSet):
-    print('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n\n\n\n\n\n\n\n')
-    author = NumberFilter(field_name='author__id')
+    # author = NumberFilter(field_name='author__id')
     # tags = CharFilter(field_name='tags__slug', lookup_expr='iexact')
     # tags = filters.ModelMultipleChoiceFilter(
     #     field_name='tags__slug',
     #     to_field_name='slug',
     #     queryset=Tag.objects.all(),
     # )
-    tags = CharFilter(field_name='tags__slug', method='filter_tags')
-    is_favorited = NumberFilter(
-        field_name='is_favorited')
-    is_in_shopping_cart = NumberFilter(
-        field_name='is_in_shopping_cart')
+    # tags = CharFilter(field_name='tags__slug', method='filter_tags')
+    tags = CharFilter(method='filter_tags')
+    # is_favorited = NumberFilter(
+    #     field_name='is_favorited')
+    # is_in_shopping_cart = NumberFilter(
+    #     field_name='is_in_shopping_cart')
     # is_favorited = filters.BooleanFilter()
     # is_in_shopping_cart = filters.BooleanFilter()
 
     # def filter_tags(self, queryset, name, value):
-    #     """Фильтрация по тегам с обработкой '#'."""
-    #     print('22222222222222222222222222222222222222222222222222222222\n\n\n\n\n\n\n\n\n')
-    #     # print(f'Queryset: {queryset.__dict__}')
+    #     """Фильтрация по тегам."""
     #     tags = self.request.GET.getlist('tags')
+    #     logger.debug(f"Теги из запроса: {tags}")
     #     if tags:
     #         q_objects = Q()
     #         for tag in tags:
     #             q_objects |= Q(tags__slug=tag)
     #         queryset = queryset.filter(q_objects).distinct()
     #     return queryset
-    
-    def filter_by_tags(self, queryset, name, value):
-        """Фильтрация рецептов по тегам."""
+
+#     def filter_by_tags(self, queryset, name, value):
+#         """Фильтрация рецептов по тегам."""
+#         tags = self.request.GET.getlist('tags')
+#         logger.debug(f"Теги из запроса: {tags}")
+#         return queryset.filter(tags__slug__in=tags).distinct()
+
+    def filter_tags(self, queryset, name, value):
         tags = self.request.GET.getlist('tags')
         logger.debug(f"Теги из запроса: {tags}")
-        return queryset.filter(tags__slug__in=tags).distinct()
+
+        # Убираем # из каждого тега (если вдруг фронтенд начнёт кодировать #)
+        cleaned_tags = [tag.lstrip('#') for tag in tags if tag]
+        logger.debug(f"Теги после очистки: {cleaned_tags}")
+
+        if cleaned_tags:
+            q_objects = Q()
+            for tag in cleaned_tags:
+                logger.debug(f"Поиск тега: {tag}")  # Отладочный вывод
+                q_objects |= Q(tags__slug=tag)
+            queryset = queryset.filter(q_objects).distinct()
+        return queryset
 
     class Meta:
         model = Recipe
-        fields = ('author', 'tags', 'is_favorited', 'is_in_shopping_cart')
+        fields = ('tags',)

@@ -125,7 +125,8 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
-    # queryset = Recipe.objects.all()
+    queryset = Recipe.objects.all()
+    logger.debug(f"Кверисет: {queryset.model}")
     # queryset = Recipe.objects.prefetch_related(
     #     'ingredient_list__ingredient',
     #     'tags',
@@ -138,17 +139,51 @@ class RecipesViewSet(viewsets.ModelViewSet):
     filterset_class = RecipeFilter
 
     def get_queryset(self):
-        """Получение списка рецептов с учетом подписок и избранного."""
-        # queryset = super().get_queryset()
         logger.debug(f"Фильтр подключён: {self.filterset_class}")
-        user = self.request.user
-        recipes = Recipe.objects.select_related(
-            'author').prefetch_related('tags', 'ingredients')
-        recipes = Recipe.objects.prefetch_related(
-            'ingredient_list__ingredient',
-            'tags',
-            'author'
-        ).all()
+        logger.debug(f"Параметры запроса: {self.request.GET}")  # Отладочный вывод
+        logger.debug(f"Кверисет до фильтрации: {super().get_queryset().__dict__}")
+        return super().get_queryset()
+    # def get_queryset(self):
+    #     # Получаем базовый queryset от родительского класса
+    #     base_queryset = super().get_queryset()
+
+    #     # Логируем критическую информацию
+    #     logger.debug("=" * 50)
+    #     logger.debug(f"1. Model: {base_queryset.model.__name__}")
+    #     logger.debug(f"2. Base SQL: {str(base_queryset.query)}")
+    #     logger.debug(f"3. Filterset Class: {self.filterset_class}")
+    #     logger.debug(f"4. Request Params: {dict(self.request.GET)}")
+    #     logger.debug(f"5. Raw queryset count: {base_queryset.count()}")
+
+    #     # Возвращаем базовый queryset (или модифицированный)
+    #     return base_queryset
+    # def get_queryset(self):
+    #     base_queryset = super().get_queryset()
+        
+    #     # Логируем исходный queryset
+    #     logger.debug(f"[BEFORE FILTERS] SQL: {str(base_queryset.query)}")
+    #     # Применяем фильтры
+    #     filtered_queryset = self.filter_queryset(base_queryset)
+        
+    #     # Логируем результат фильтрации
+    #     logger.debug(f"[AFTER FILTERS] SQL: {str(filtered_queryset.query)}")
+    #     logger.debug(f"Filtered count: {filtered_queryset.count()}")
+        
+    #     return filtered_queryset
+
+
+    # def get_queryset(self):
+    #     """Получение списка рецептов с учетом подписок и избранного."""
+    #     # queryset = super().get_queryset()
+    #     logger.debug(f"Фильтр подключён: {self.filterset_class}")
+    #     user = self.request.user
+    #     # recipes = Recipe.objects.select_related(
+    #     #     'author').prefetch_related('tags', 'ingredients')
+    #     recipes = Recipe.objects.prefetch_related(
+    #         'ingredient_list__ingredient',
+    #         'tags',
+    #         'author'
+    #     ).all()
         # logger.debug(f"Мой кверисет: {recipes}")
         # queryset = self.filter_queryset(recipes)
         # if user.is_authenticated:
@@ -166,17 +201,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
         # return queryset
 
-        if user.is_authenticated:
-            return recipes.annotate(
-                is_favorited=Exists(Favorite.objects.filter(
-                    user=user, recipe=OuterRef('pk'))),
-                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-                    user=user, recipe=OuterRef('pk')))
-            )
-        return recipes.annotate(
-            is_favorited=Value(False, output_field=BooleanField()),
-            is_in_shopping_cart=Value(False, output_field=BooleanField())
-        )
+        # if user.is_authenticated:
+        #     return recipes.annotate(
+        #         is_favorited=Exists(Favorite.objects.filter(
+        #             user=user, recipe=OuterRef('pk'))),
+        #         is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+        #             user=user, recipe=OuterRef('pk')))
+        #     )
+        # return recipes.annotate(
+        #     is_favorited=Value(False, output_field=BooleanField()),
+        #     is_in_shopping_cart=Value(False, output_field=BooleanField())
+        # )
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора."""
@@ -203,6 +238,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         """Получение подробной информации о рецепте."""
         instance = self.get_object()
+        logger.debug(f"Получение подробной информации о рецепте: {instance}")
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 

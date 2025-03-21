@@ -33,7 +33,6 @@ urls_ver1 = [
         name='get_short_link'
     ),
 
-    # path('', include('djoser.urls')),
     path('auth/', include('djoser.urls.authtoken')),
 
     path('', include(router_v1.urls)),

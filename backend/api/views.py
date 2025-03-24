@@ -133,17 +133,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
             'author'
         ).all()
 
-        # if user.is_authenticated:
-        #     return recipes.annotate(
-        #         is_favorited=Exists(Favorite.objects.filter(
-        #             user=user, recipe=OuterRef('pk'))),
-        #         is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-        #             user=user, recipe=OuterRef('pk')))
-        #     )
-        # return recipes.annotate(
-        #     is_favorited=Value(False, output_field=BooleanField()),
-        #     is_in_shopping_cart=Value(False, output_field=BooleanField())
-        # )
+        if user.is_authenticated:
+            return recipes.annotate(
+                is_favorited=Exists(Favorite.objects.filter(
+                    user=user, recipe=OuterRef('pk'))),
+                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                    user=user, recipe=OuterRef('pk')))
+            )
+        return recipes.annotate(
+            is_favorited=Value(False, output_field=BooleanField()),
+            is_in_shopping_cart=Value(False, output_field=BooleanField())
+        )
 
     def get_serializer_class(self):
         """Метод для вызова определенного сериализатора."""
@@ -170,7 +170,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def retrieve(self, request, *args, **kwargs):
         """Получение подробной информации о рецепте."""
         instance = self.get_object()
-        logger.debug(f"Получение подробной информации о рецепте: {instance}")
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 

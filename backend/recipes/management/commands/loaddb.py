@@ -21,7 +21,7 @@ def tags_create(rows):
     for row in rows:
         tags.append(Tag(
             name=row[0],
-            slug=row[1]
+            slug=row[2]
         ))
     Tag.objects.bulk_create(tags, ignore_conflicts=True)
 

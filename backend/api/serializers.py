@@ -2,16 +2,15 @@ import base64
 
 from api.constants import MAX_LENGTH
 from api.utils import (is_item_in_user_list,
-                       validate_not_empty,
-                       processing_recipe_ingredients_and_tags)
+                       processing_recipe_ingredients_and_tags,
+                       validate_not_empty)
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
+from recipes.constants import MIN_INGREDIENT_AMOUNT
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 from rest_framework import serializers
 from users.models import Subscription
-from recipes.constants import MIN_INGREDIENT_AMOUNT
-
 
 User = get_user_model()
 
@@ -270,41 +269,6 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
         return value
 
-    # def create(self, validated_data):
-    #     """Создание рецепта с ингредиентами."""
-    #     ingredients_data = validated_data.pop("ingredients")
-    #     tags = validated_data.pop("tags")
-    #     recipe = Recipe.objects.create(**validated_data)
-    #     recipe.tags.set(tags)
-    #     ingredients = [
-    #         IngredientInRecipe(
-    #             recipe=recipe,
-    #             ingredient=item["ingredient"],
-    #             amount=item["amount"]
-    #         )
-    #         for item in ingredients_data
-    #     ]
-    #     IngredientInRecipe.objects.bulk_create(ingredients)
-
-    #     return recipe
-
-    # def update(self, instance, validated_data):
-    #     """Обновление существующего рецепта."""
-    #     ingredients_data = validated_data.pop('ingredients')
-    #     tags = validated_data.pop('tags')
-    #     instance = super().update(instance, validated_data)
-    #     instance.tags.set(tags)
-    #     instance.ingredient_list.all().delete()
-    #     ingredients = [
-    #         IngredientInRecipe(
-    #             recipe=instance,
-    #             ingredient=item['ingredient'],
-    #             amount=item['amount']
-    #         ) for item in ingredients_data
-    #     ]
-    #     IngredientInRecipe.objects.bulk_create(ingredients)
-    #     return instance
-
     def create(self, validated_data):
         """Создание рецепта с ингредиентами."""
         ingredients_data = validated_data.pop("ingredients")
@@ -341,12 +305,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
     image = Base64ImageField(use_url=True)
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
-    # is_favorited = serializers.BooleanField(
-    #     default=False
-    # )
-    # is_in_shopping_cart = serializers.BooleanField(
-    #     default=False
-    # )
     author = CustomUserSerializer(read_only=True)
 
     class Meta:

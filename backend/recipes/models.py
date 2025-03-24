@@ -1,4 +1,5 @@
 import uuid
+
 from django.contrib.auth import get_user_model
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
@@ -8,7 +9,6 @@ from recipes.constants import (GENERATE_LENGTH, INGREDIENT_LENGTH,
                                MIN_INGREDIENT_AMOUNT, RECIPE_LENGTH,
                                RECIPE_NAME_LENGTH, SHORT_LINK, TAG_LENGTH,
                                TAG_NAME_LENGTH)
-
 
 User = get_user_model()
 

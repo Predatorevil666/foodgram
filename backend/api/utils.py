@@ -1,6 +1,6 @@
-from rest_framework.response import Response
-from rest_framework import status, serializers
 from recipes.models import IngredientInRecipe, Recipe
+from rest_framework import serializers, status
+from rest_framework.response import Response
 
 
 def is_item_in_user_list(obj, model, user):
@@ -60,14 +60,6 @@ def get_recipe(pk):
 def create_or_update_recipe(serializer, request, instance=None):
     """
     Универсальная функция для создания или обновления рецепта.
-    :param serializer: Сериализатор для создания/обновления (
-    RecipeWriteSerializer
-    ).
-    :param request: Запрос от пользователя.
-    :param instance: Экземпляр рецепта (
-    для обновления
-    ). Если None, создается новый рецепт.
-    :return: Ответ с данными рецепта в формате RecipeReadSerializer.
     """
     from api.serializers import RecipeReadSerializer
     if instance:
@@ -91,10 +83,6 @@ def create_or_update_recipe(serializer, request, instance=None):
 def validate_not_empty(value, field_name):
     """
     Универсальная функция для проверки, что поле не пустое.
-    :param value: Значение для проверки.
-    :param field_name: Название поля (для сообщения об ошибке).
-    :return: value, если оно не пустое.
-    :raises: serializers.ValidationError, если значение пустое.
     """
     if not value:
         raise serializers.ValidationError(
@@ -110,10 +98,6 @@ def processing_recipe_ingredients_and_tags(
 ):
     """
     Универсальная функция для обрабатки ингредиентов и тегов рецепта.
-    :param recipe: Экземпляр рецепта (созданный или обновляемый).
-    :param ingredients_data: Данные ингредиентов.
-    :param tags: Данные тегов.
-    :return: recipe (обновленный экземпляр рецепта).
     """
     recipe.tags.set(tags)
     if recipe.pk:

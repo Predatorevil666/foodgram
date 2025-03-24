@@ -1,18 +1,14 @@
-import logging
-
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (AvatarSerializer,
-                             CustomUserCreateSerializer, CustomUserSerializer,
-                             FavoriteSerializer,
+from api.serializers import (AvatarSerializer, CustomUserCreateSerializer,
+                             CustomUserSerializer, FavoriteSerializer,
                              IngredientSerializer, RecipeReadSerializer,
                              RecipeShortLinkSerializer, RecipeWriteSerializer,
-                             ShoppingCartSerializer,
-                             SubscriptionSerializer, TagSerializer)
-from api.utils import get_recipe, manage_user_list, create_or_update_recipe
+                             ShoppingCartSerializer, SubscriptionSerializer,
+                             TagSerializer)
+from api.utils import create_or_update_recipe, get_recipe, manage_user_list
 from django.contrib.auth import get_user_model
-# from django.db.models import Sum
 from django.db.models import BooleanField, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -26,9 +22,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from users.models import Subscription
-
-
-logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
@@ -125,12 +118,6 @@ class TagsViewSet(viewsets.ReadOnlyModelViewSet):
 
 class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
-    # queryset = Recipe.objects.all()
-    # queryset = Recipe.objects.prefetch_related(
-    #     'ingredient_list__ingredient',
-    #     'tags',
-    #     'author'
-    # ).all()
 
     permission_classes = (IsAuthorOrReadOnly,)
     pagination_class = CustomPagination
@@ -139,32 +126,12 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Получение списка рецептов с учетом подписок и избранного."""
-        # queryset = super().get_queryset()
-        logger.debug(f"Фильтр подключён: {self.filterset_class}")
         user = self.request.user
-        recipes = Recipe.objects.select_related(
-            'author').prefetch_related('tags', 'ingredients')
         recipes = Recipe.objects.prefetch_related(
             'ingredient_list__ingredient',
             'tags',
             'author'
         ).all()
-        # logger.debug(f"Мой кверисет: {recipes}")
-        # queryset = self.filter_queryset(recipes)
-        # if user.is_authenticated:
-        #     queryset = queryset.annotate(
-        #         is_favorited=Exists(Favorite.objects.filter(
-        #             user=user, recipe=OuterRef('pk'))),
-        #         is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-        #             user=user, recipe=OuterRef('pk')))
-        #     )
-        # else:
-        #     queryset = queryset.annotate(
-        #         is_favorited=Value(False, output_field=BooleanField()),
-        #         is_in_shopping_cart=Value(False, output_field=BooleanField())
-        #     )
-
-        # return queryset
 
         if user.is_authenticated:
             return recipes.annotate(

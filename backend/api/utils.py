@@ -1,83 +1,63 @@
-from recipes.models import IngredientInRecipe, Recipe
+import base64
+
+from django.core.files.base import ContentFile
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
+from recipes.models import IngredientInRecipe
 
-def is_item_in_user_list(obj, model, user):
+
+class Base64ImageField(serializers.ImageField):
+    """Обработка изображения в формате Base64"""
+
+    def to_internal_value(self, data):
+        if isinstance(data, str) and data.startswith('data:image'):
+            format, imgstr = data.split(';base64,')
+            ext = format.split('/')[-1]
+            data = ContentFile(base64.b64decode(imgstr), name=f'image.{ext}')
+
+        return super().to_internal_value(data)
+
+
+def is_item_in_user_list(obj, model, request):
     """Общий метод для проверки наличия элемента в списке пользователя."""
-    if user.is_anonymous:
+    if (not request
+            or not hasattr(request, 'user')
+            or request.user.is_anonymous):
         return False
-    return model.objects.filter(user=user, recipe=obj).exists()
+    return model.objects.filter(user=request.user, recipe=obj).exists()
 
 
-def check_if_exists(model, user, recipe):
-    """Метод для проверки на существование обьекта."""
-    return model.objects.filter(user=user, recipe=recipe).exists()
+def add_to_user_list(model, serializer_class, user, recipe):
+    """
+    Метод для добавления рецепта в пользовательский список
+    (избранное/корзину).
+    """
+    obj, created = model.objects.get_or_create(user=user, recipe=recipe)
+    if not created:
+        return Response(
+            {'errors': f'Повторно "{recipe.name}" добавить нельзя, '
+             f'он уже есть в списке.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    serializer = serializer_class(recipe)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-def manage_user_list(model, serializer_class, user, recipe, request_method):
-    """Общий метод для управления избранным и списком покупок."""
-    if request_method == 'POST':
-        if check_if_exists(model, user, recipe):
-            return Response(
-                {'errors': f'Повторно "{recipe.name}" добавить нельзя, '
-                 f'он уже есть в списке.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        model.objects.create(user=user, recipe=recipe)
-        serializer = serializer_class(recipe)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+def remove_from_user_list(model, user, recipe):
+    """
+    Метод для удаления рецепта из пользовательского списка
+    (избранного/корзины).
+    """
+    deleted_count, _ = model.objects.filter(user=user, recipe=recipe).delete()
 
-    elif request_method == 'DELETE':
-        obj = model.objects.filter(user=user, recipe=recipe)
-        if obj.exists():
-            obj.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+    if deleted_count == 0:
         return Response(
             {'errors': f'Рецепт "{recipe.name}" отсутствует в списке.'},
             status=status.HTTP_400_BAD_REQUEST
         )
 
-
-def get_recipe(pk):
-    """Получение рецепта по ID с обработкой ошибок."""
-    try:
-        recipe_id = int(pk)
-        recipe = Recipe.objects.get(pk=recipe_id)
-        return recipe, None
-    except ValueError:
-        return None, Response(
-            {'error': 'ID рецепта должно быть числом.'},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    except Recipe.DoesNotExist:
-        return None, Response(
-            {'errors': 'Рецепт не найден.'},
-            status=status.HTTP_404_NOT_FOUND
-        )
-
-
-def create_or_update_recipe(serializer, request, instance=None):
-    """
-    Универсальная функция для создания или обновления рецепта.
-    """
-    from api.serializers import RecipeReadSerializer
-    if instance:
-        serializer_instance = serializer(
-            instance, data=request.data, partial=False)
-    else:
-        serializer_instance = serializer(data=request.data)
-
-    serializer_instance.is_valid(raise_exception=True)
-    serializer_instance.save(author=request.user)
-    read_serializer = RecipeReadSerializer(
-        serializer_instance.instance,
-        context={'request': request}
-    )
-    return Response(
-        read_serializer.data,
-        status=status.HTTP_201_CREATED if not instance else status.HTTP_200_OK
-    )
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 def validate_not_empty(value, field_name):

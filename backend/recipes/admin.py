@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.db.models import Count
+
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
 
@@ -42,6 +43,7 @@ class RecipeAdmin(admin.ModelAdmin):
     ordering = ('-pub_date',)
     empty_value_display = 'Новый рецепт'
 
+    @admin.display(description='Количество в избранном')
     def favorite_count(self, obj):
         """Метод для подсчета количества добавлений в избранное."""
         return obj.favorite_count

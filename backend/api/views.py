@@ -3,7 +3,6 @@ from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from djoser.serializers import SetPasswordSerializer
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -14,11 +13,10 @@ from rest_framework.response import Response
 from api.filters import IngredientFilter, RecipeFilter
 from api.pagination import CustomPagination
 from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (AvatarSerializer, FavoriteSerializer,
-                             IngredientSerializer, RecipeReadSerializer,
-                             RecipeWriteSerializer, ShoppingCartSerializer,
-                             SubscriptionSerializer, TagSerializer,
-                             UserCreateSerializer, UserSerializer)
+from api.serializers import (AvatarSerializer, IngredientSerializer,
+                             RecipeReadSerializer, RecipeShortSerializer,
+                             RecipeWriteSerializer, SubscriptionSerializer,
+                             TagSerializer, UserSerializer)
 from api.utils import add_to_user_list, remove_from_user_list
 from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
                             ShoppingCart, Tag)
@@ -32,28 +30,10 @@ class UserViewSet(DjoserUserViewSet):
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
     pagination_class = CustomPagination
+    serializer_class = UserSerializer
 
     def get_serializer_class(self):
-        if self.action == 'create':
-            return UserCreateSerializer
-        elif self.action == 'update_avatar':
-            return AvatarSerializer
-        return UserSerializer
-
-    @action(
-        detail=False,
-        methods=["post"],
-        permission_classes=(IsAuthenticated,),
-    )
-    def set_password(self, request):
-        serializer = SetPasswordSerializer(
-            data=request.data,
-            context={'request': request}
-        )
-        serializer.is_valid(raise_exception=True)
-        self.request.user.set_password(serializer.data["new_password"])
-        self.request.user.save()
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        return super().get_serializer_class()
 
     @action(
         detail=False,
@@ -76,11 +56,6 @@ class UserViewSet(DjoserUserViewSet):
     def update_avatar(self, request):
         """Управление аватаром пользователя."""
         user = request.user
-        if 'avatar' not in request.data:
-            return Response(
-                {"avatar": "Это поле обязательно."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
         serializer = self.get_serializer(
             user, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -150,14 +125,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
             return RecipeWriteSerializer
         return RecipeReadSerializer
 
-    def perform_create(self, serializer):
-        """Создание рецепта с автоматическим назначением автора."""
-        serializer.save(author=self.request.user)
-
-    def perform_update(self, serializer):
-        """Обновление рецепта."""
-        serializer.save()
-
     @action(
         detail=True,
         methods=['get'],
@@ -184,16 +151,16 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if request.method == 'POST':
             return add_to_user_list(
                 model=Favorite,
-                serializer_class=FavoriteSerializer,
+                serializer_class=RecipeShortSerializer,
                 user=request.user,
                 recipe=recipe
             )
-        else:
-            return remove_from_user_list(
-                model=Favorite,
-                user=request.user,
-                recipe=recipe
-            )
+
+        return remove_from_user_list(
+            model=Favorite,
+            user=request.user,
+            recipe=recipe
+        )
 
     @action(
         detail=True,
@@ -208,16 +175,15 @@ class RecipesViewSet(viewsets.ModelViewSet):
         if request.method == 'POST':
             return add_to_user_list(
                 model=ShoppingCart,
-                serializer_class=ShoppingCartSerializer,
+                serializer_class=RecipeShortSerializer,
                 user=request.user,
                 recipe=recipe
             )
-        else:
-            return remove_from_user_list(
-                model=ShoppingCart,
-                user=request.user,
-                recipe=recipe
-            )
+        return remove_from_user_list(
+            model=ShoppingCart,
+            user=request.user,
+            recipe=recipe
+        )
 
     @staticmethod
     def ingredients_to_txt(ingredients):

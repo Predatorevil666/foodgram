@@ -1,31 +1,7 @@
-import base64
-
-from django.core.files.base import ContentFile
 from rest_framework import serializers, status
 from rest_framework.response import Response
 
 from recipes.models import IngredientInRecipe
-
-
-class Base64ImageField(serializers.ImageField):
-    """Обработка изображения в формате Base64"""
-
-    def to_internal_value(self, data):
-        if isinstance(data, str) and data.startswith('data:image'):
-            format, imgstr = data.split(';base64,')
-            ext = format.split('/')[-1]
-            data = ContentFile(base64.b64decode(imgstr), name=f'image.{ext}')
-
-        return super().to_internal_value(data)
-
-
-def is_item_in_user_list(obj, model, request):
-    """Общий метод для проверки наличия элемента в списке пользователя."""
-    if (not request
-            or not hasattr(request, 'user')
-            or request.user.is_anonymous):
-        return False
-    return model.objects.filter(user=request.user, recipe=obj).exists()
 
 
 def add_to_user_list(model, serializer_class, user, recipe):
@@ -33,7 +9,7 @@ def add_to_user_list(model, serializer_class, user, recipe):
     Метод для добавления рецепта в пользовательский список
     (избранное/корзину).
     """
-    obj, created = model.objects.get_or_create(user=user, recipe=recipe)
+    _, created = model.objects.get_or_create(user=user, recipe=recipe)
     if not created:
         return Response(
             {'errors': f'Повторно "{recipe.name}" добавить нельзя, '
@@ -81,7 +57,7 @@ def processing_recipe_ingredients_and_tags(
     """
     recipe.tags.set(tags)
     if recipe.pk:
-        recipe.ingredient_list.all().delete()
+        recipe.ingredients.clear()
     ingredients = [
         IngredientInRecipe(
             recipe=recipe,

@@ -49,12 +49,6 @@ class User(AbstractUser):
     def __str__(self):
         return self.username
 
-    def delete_avatar(self):
-        """Метод для удаления аватара."""
-        if self.avatar:
-            self.avatar.delete()
-            self.save()
-
 
 class Subscription(models.Model):
     """Модель подписки."""
@@ -76,9 +70,10 @@ class Subscription(models.Model):
     @classmethod
     def is_subscribed(cls, user, author):
         """Проверка подписки."""
-        if user.is_anonymous:
-            return False
-        return cls.objects.filter(user=user, author=author).exists()
+        return user.is_authenticated and cls.objects.filter(
+            user=user,
+            author=author
+        ).exists()
 
     class Meta:
         verbose_name = "Подписка"

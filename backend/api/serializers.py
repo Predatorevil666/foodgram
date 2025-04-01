@@ -2,11 +2,10 @@ from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
 
-from api.utils import (Base64ImageField, is_item_in_user_list,
-                       processing_recipe_ingredients_and_tags,
+from api.utils import (processing_recipe_ingredients_and_tags,
                        validate_not_empty)
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
+from api.fields import Base64ImageField
+from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
 from users.models import Subscription
 
 User = get_user_model()
@@ -52,29 +51,6 @@ class UserSerializer(BaseUserSerializer):
         if obj.avatar:
             return obj.avatar.url
         return None
-
-
-class UserCreateSerializer(BaseUserSerializer):
-    """Сериализатор для создания нового пользователя."""
-
-    password = serializers.CharField(
-        write_only=True,
-        required=True,
-        min_length=8
-    )
-
-    class Meta(BaseUserSerializer.Meta):
-        fields = (
-            'id',
-            'email',
-            'username',
-            'first_name',
-            'last_name',
-            'password'
-        )
-
-    def create(self, validated_data):
-        return User.objects.create_user(**validated_data)
 
 
 class TagSerializer(serializers.ModelSerializer):
@@ -236,22 +212,6 @@ class RecipeReadSerializer(serializers.ModelSerializer):
             'is_favorited', 'is_in_shopping_cart',
         )
 
-    def get_is_favorited(self, obj):
-        """Проверка на наличие в избранном."""
-        return is_item_in_user_list(
-            obj=obj,
-            model=Favorite,
-            request=self.context.get('request')
-        )
-
-    def get_is_in_shopping_cart(self, obj):
-        """Проверка на наличие в корзине."""
-        return is_item_in_user_list(
-            obj=obj,
-            model=ShoppingCart,
-            request=self.context.get('request')
-        )
-
 
 class RecipeShortSerializer(serializers.ModelSerializer):
     """Краткий сериализатор для рецептов (используется в подписках)."""
@@ -289,29 +249,9 @@ class SubscriptionSerializer(UserSerializer):
         return obj.recipes.count()
 
 
-class FavoriteSerializer(RecipeShortSerializer):
-    """Сериализатор для избранного."""
-
-    pass
-
-
-class ShoppingCartSerializer(RecipeShortSerializer):
-    """Сериализатор для списка покупок."""
-
-    pass
-
-
 class AvatarSerializer(serializers.ModelSerializer):
-    avatar = Base64ImageField(required=False, allow_null=True)
+    avatar = Base64ImageField(required=True)
 
     class Meta:
         model = User
         fields = ('avatar',)
-
-    def to_representation(self, instance):
-        return {
-            'avatar': self.context['request'].build_absolute_uri(
-                instance.avatar.url
-            )
-            if instance.avatar else None
-        }

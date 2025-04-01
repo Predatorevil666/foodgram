@@ -126,11 +126,9 @@ DJOSER = {
     'SERIALIZERS': {
         'user': 'api.serializers.UserSerializer',
         'current_user': 'api.serializers.UserSerializer',
-        'set_password': 'djoser.serializers.SetPasswordSerializer',
     },
     'PERMISSIONS': {
         'user_list': ['rest_framework.permissions.AllowAny'],
-        'set_password': ['rest_framework.permissions.IsAuthenticated'],
     },
     'HIDE_USERS': False,
 }

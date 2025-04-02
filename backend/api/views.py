@@ -4,6 +4,8 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
+from django.views.generic import RedirectView
+from django.urls import reverse
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
@@ -11,7 +13,7 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
 from rest_framework.response import Response
 
 from api.filters import IngredientFilter, RecipeFilter
-from api.pagination import CustomPagination
+from api.pagination import PageNumberLimitPagination
 from api.permissions import IsAuthorOrReadOnly
 from api.serializers import (AvatarSerializer, IngredientSerializer,
                              RecipeReadSerializer, RecipeShortSerializer,
@@ -29,11 +31,8 @@ class UserViewSet(DjoserUserViewSet):
     """Вьюсет для работы с обьектами класса User."""
     queryset = User.objects.all()
     permission_classes = (permissions.AllowAny,)
-    pagination_class = CustomPagination
+    pagination_class = PageNumberLimitPagination
     serializer_class = UserSerializer
-
-    def get_serializer_class(self):
-        return super().get_serializer_class()
 
     @action(
         detail=False,
@@ -94,7 +93,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     """Вьюсет для рецептов."""
 
     permission_classes = (IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly,)
-    pagination_class = CustomPagination
+    pagination_class = PageNumberLimitPagination
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
 
@@ -133,10 +132,10 @@ class RecipesViewSet(viewsets.ModelViewSet):
     def get_short_link(self, request, pk=None):
         """Получение короткой ссылки на рецепт."""
         recipe = self.get_object()
-        short_link = request.build_absolute_uri(
-            f"/api/recipes/{recipe.pk}/"
+        short_url = request.build_absolute_uri(
+            reverse('api:recipe-redirect', kwargs={'slug': recipe.slug})
         )
-        return Response({'short-link': short_link})
+        return Response({'short-link': short_url})
 
     @action(
         detail=True,
@@ -220,6 +219,17 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return HttpResponse(shopping_list, content_type='text/plain')
 
 
+class RecipeRedirectView(RedirectView):
+    """Вьюсет для редиректа."""
+
+    permanent = True
+    query_string = True
+
+    def get_redirect_url(self, *args, **kwargs):
+        recipe = get_object_or_404(Recipe, slug=kwargs['slug'])
+        return f'/recipes/{recipe.slug}/'
+
+
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов."""
 
@@ -239,7 +249,7 @@ class SubscriptionViewSet(
 ):
     serializer_class = SubscriptionSerializer
     permission_classes = (IsAuthenticated,)
-    pagination_class = CustomPagination
+    pagination_class = PageNumberLimitPagination
 
     def get_queryset(self):
         return User.objects.filter(

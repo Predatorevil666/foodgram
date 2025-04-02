@@ -1,44 +1,44 @@
-# volumes:
-#   pg_data_production:
-#   static_volume:
-#   media:
+volumes:
+  pg_data_production:
+  static_volume:
+  media:
 
-# services:
-#   db:
-#     image: postgres:13.10
-#     container_name: db
-#     env_file: .env
-#     volumes:
-#       - pg_data_production:/var/lib/postgresql/data
-#   backend:
-#     image: predatorevil666/kittygram_backend
-#     container_name: backend
-#     env_file: .env
-#     depends_on:
-#       - db
-#     volumes:
-#       - static_volume:/backend_static
-#       - media:/var/www/kittygram/media/
-#   frontend:
-#     image: predatorevil666/kittygram_frontend
-#     container_name: frontend
-#     env_file: .env
-#     command: cp -r /app/build/. /frontend_static/
-#     volumes:
-#       - static_volume:/frontend_static
-#   gateway:
-#     image: predatorevil666/kittygram_gateway
-#     env_file: .env
-#     container_name: gateway
-#     depends_on:
-#       - backend
-#     volumes:
-#       - static_volume:/staticfiles/
-#       - media:/media
-#     ports:
-#       - 9000:80
+services:
+  db:
+    image: postgres:13.10
+    container_name: db
+    env_file: .env
+    volumes:
+      - pg_data_production:/var/lib/postgresql/data
+  backend:
+    image: predatorevil666/foodgram_backend
+    container_name: backend
+    env_file: .env
+    depends_on:
+      - db
+    volumes:
+      - static_volume:/backend_static
+      - media:/app/media/
+  frontend:
+    image: predatorevil666/foodgram_frontend
+    container_name: frontend
+    env_file: .env
+    command: cp -r /app/build/. /frontend_static/
+    volumes:
+      - static_volume:/frontend_static
+  nginx:
+    image: predatorevil666/foodgram_nginx
+    env_file: .env
+    container_name: nginx
+    depends_on:
+      - backend
+    volumes:
+      - static_volume:/staticfiles/
+      - media:/media
+    ports:
+      - 8000:80
 
-# networks:
-#   default:
-#     driver: bridge
-#     name: kittygram_network
+networks:
+  default:
+    driver: bridge
+    name: foodgram_network

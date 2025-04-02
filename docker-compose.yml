@@ -11,7 +11,7 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/pg_data
   backend:
-    build: ./backend
+    build: ./backend/
     container_name: backend
     env_file: .env
     depends_on:
@@ -22,18 +22,19 @@ services:
 
   frontend:
     env_file: .env
-    build : ./frontend
+    build : ./frontend/
     container_name: frontend
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static
   nginx:
-    build: ./nginx
+    build: ./nginx/
     env_file: .env
     container_name: nginx
     depends_on:
       - backend
     volumes:
+      - ../docs/:/usr/share/nginx/html/api/docs/
       - static:/staticfiles
       - media:/media
     ports:

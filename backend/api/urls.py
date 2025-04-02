@@ -39,5 +39,5 @@ urls_ver1 = [
 ]
 
 urlpatterns = [
-    path('', include(urls_ver1)),
+    path('v1/', include(urls_ver1)),
 ]

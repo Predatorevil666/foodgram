@@ -1,8 +1,9 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from api.views import (IngredientViewSet, RecipeRedirectView, RecipesViewSet,
+from api.views import (IngredientViewSet, RecipesViewSet,
                        SubscriptionViewSet, TagsViewSet, UserViewSet)
+
 
 app_name = 'api'
 
@@ -27,11 +28,6 @@ urls_ver1 = [
         name='subscribe'
     ),
 
-    path(
-        'r/<slug:slug>/',
-        RecipeRedirectView.as_view(),
-        name='recipe-redirect'
-    ),
 
     path('auth/', include('djoser.urls.authtoken')),
 
@@ -39,5 +35,5 @@ urls_ver1 = [
 ]
 
 urlpatterns = [
-    path('v1/', include(urls_ver1)),
+    path('', include(urls_ver1)),
 ]

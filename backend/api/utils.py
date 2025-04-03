@@ -68,3 +68,4 @@ def processing_recipe_ingredients_and_tags(
     IngredientInRecipe.objects.bulk_create(ingredients)
 
     return recipe
+

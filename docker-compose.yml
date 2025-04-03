@@ -28,13 +28,15 @@ services:
     volumes:
       - static:/frontend_static
   nginx:
-    build: ./nginx/
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
     env_file: .env
     container_name: nginx
     depends_on:
       - backend
     volumes:
-      - ../docs/:/usr/share/nginx/html/api/docs/
+      - ./docs/:/usr/share/nginx/html/api/docs/
       - static:/staticfiles
       - media:/media
     ports:

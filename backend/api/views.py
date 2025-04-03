@@ -4,7 +4,6 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from django.views.generic import RedirectView
 from django.urls import reverse
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -131,9 +130,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
     )
     def get_short_link(self, request, pk=None):
         """Получение короткой ссылки на рецепт."""
-        recipe = self.get_object()
+        recipe = get_object_or_404(Recipe, pk=pk)
         short_url = request.build_absolute_uri(
-            reverse('api:recipe-redirect', kwargs={'slug': recipe.slug})
+            reverse('recipes:short-link-redirect', args=[recipe.slug])
         )
         return Response({'short-link': short_url})
 
@@ -219,15 +218,21 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return HttpResponse(shopping_list, content_type='text/plain')
 
 
-class RecipeRedirectView(RedirectView):
-    """Вьюсет для редиректа."""
+# class RecipeRedirectView(RedirectView):
+#     """Вьюсет для редиректа."""
 
-    permanent = True
-    query_string = True
+#     permanent = True
 
-    def get_redirect_url(self, *args, **kwargs):
-        recipe = get_object_or_404(Recipe, slug=kwargs['slug'])
-        return f'/recipes/{recipe.slug}/'
+#     def get_redirect_url(self, *args, **kwargs):
+#         recipe = get_object_or_404(Recipe, slug=kwargs['slug'])
+#         # Перенаправляем на детальное представление рецепта
+#         return reverse('api:recipe-detail', kwargs={'pk': recipe.id})
+
+
+# class RecipeDetailView(RetrieveAPIView):
+#     queryset = Recipe.objects.all()
+#     serializer_class = RecipeReadSerializer
+#     lookup_field = 'pk'
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):

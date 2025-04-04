@@ -1,4 +1,5 @@
 # Название проекта: Продуктовый помощник Foodgram
+Доступен по адресу: [https://learn-foodgram.hopto.org](https://learn-foodgram.hopto.org)
 
 ## Автор проект
 * [Alexander Batogov](https://github.com/Predatorevil666)

@@ -1,11 +1,3 @@
-from api.filters import IngredientFilter, RecipeFilter
-from api.pagination import PageNumberLimitPagination
-from api.permissions import IsAuthorOrReadOnly
-from api.serializers import (AvatarSerializer, IngredientSerializer,
-                             RecipeReadSerializer, RecipeShortSerializer,
-                             RecipeWriteSerializer, SubscriptionSerializer,
-                             TagSerializer, UserSerializer)
-from api.utils import add_to_user_list, remove_from_user_list
 from django.contrib.auth import get_user_model
 from django.db.models import BooleanField, Count, Exists, OuterRef, Sum, Value
 from django.http import HttpResponse
@@ -13,14 +5,39 @@ from django.shortcuts import get_object_or_404
 from django.urls import reverse
 from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
-from recipes.models import (Favorite, Ingredient, IngredientInRecipe, Recipe,
-                            ShoppingCart, Tag)
 from rest_framework import filters, mixins, permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    AllowAny,
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
+
+from api.filters import IngredientFilter, RecipeFilter
+from api.pagination import PageNumberLimitPagination
+from api.permissions import IsAuthorOrReadOnly
+from api.serializers import (
+    AvatarSerializer,
+    IngredientSerializer,
+    RecipeReadSerializer,
+    RecipeShortSerializer,
+    RecipeWriteSerializer,
+    SubscriptionSerializer,
+    TagSerializer,
+    UserSerializer,
+)
+from api.utils import add_to_user_list, remove_from_user_list
+from recipes.models import (
+    Favorite,
+    Ingredient,
+    IngredientInRecipe,
+    Recipe,
+    ShoppingCart,
+    Tag,
+)
 from users.models import Subscription
+
 
 User = get_user_model()
 

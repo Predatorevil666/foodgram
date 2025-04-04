@@ -79,7 +79,7 @@ DOCKER_USERNAME=<имя пользователя DockerHub>
 
 USER=<username для подключения к серверу>
 HOST=<IP сервера>
-PASSPHRASE=<пароль для сервера, если он установлен>
+SSH_PASSPHRASE=<пароль для сервера, если он установлен>
 SSH_KEY=<ваш SSH ключ (для получения команда: cat ~/.ssh/id_rsa)>
 SSH_PORT=<порт сервера, если был изменен>
 

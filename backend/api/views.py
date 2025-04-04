@@ -218,23 +218,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return HttpResponse(shopping_list, content_type='text/plain')
 
 
-# class RecipeRedirectView(RedirectView):
-#     """Вьюсет для редиректа."""
-
-#     permanent = True
-
-#     def get_redirect_url(self, *args, **kwargs):
-#         recipe = get_object_or_404(Recipe, slug=kwargs['slug'])
-#         # Перенаправляем на детальное представление рецепта
-#         return reverse('api:recipe-detail', kwargs={'pk': recipe.id})
-
-
-# class RecipeDetailView(RetrieveAPIView):
-#     queryset = Recipe.objects.all()
-#     serializer_class = RecipeReadSerializer
-#     lookup_field = 'pk'
-
-
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     """Вьюсет для ингредиентов."""
 

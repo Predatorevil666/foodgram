@@ -1,7 +1,6 @@
+from recipes.models import IngredientInRecipe
 from rest_framework import serializers, status
 from rest_framework.response import Response
-
-from recipes.models import IngredientInRecipe
 
 
 def add_to_user_list(model, serializer_class, user, recipe):

@@ -183,7 +183,8 @@ jobs:
       - name: Push to DockerHub
         uses: docker/build-push-action@v4
         with:
-          context: ./nginx/
+          context: ./
+          file: ./nginx/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/foodgram_nginx:latest
           cache-from: type=local,src=/tmp/.buildx-cache-nginx

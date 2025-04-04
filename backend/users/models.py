@@ -2,7 +2,6 @@ from django.contrib.auth.models import AbstractUser
 from django.contrib.auth.validators import UnicodeUsernameValidator
 from django.core.exceptions import ValidationError
 from django.db import models
-
 from users.constants import EMAIL_LENGTH, USER_LENGTH
 
 

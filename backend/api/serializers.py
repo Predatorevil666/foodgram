@@ -1,11 +1,10 @@
-from django.contrib.auth import get_user_model
-from django.db import transaction
-from rest_framework import serializers
-
 from api.fields import Base64ImageField
 from api.utils import (processing_recipe_ingredients_and_tags,
                        validate_not_empty)
+from django.contrib.auth import get_user_model
+from django.db import transaction
 from recipes.models import Ingredient, IngredientInRecipe, Recipe, Tag
+from rest_framework import serializers
 from users.models import Subscription
 
 User = get_user_model()

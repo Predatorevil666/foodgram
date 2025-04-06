@@ -18,9 +18,7 @@ const Technologies = () => {
           <h2 className={styles.subtitle}>Технологии, которые применены в этом проекте:</h2>
           <div className={styles.text}>
             <ul className={styles.textItem}>
-              <li className={styles.textItem}>
-                Python
-              </li>
+              <a href="https://img.shields.io/badge/-Python-464646?style=flat&logo=Python&logoColor=56C0C0&color=008080" className={styles.textLink}>Python</a>
               <li className={styles.textItem}>
                 Django
               </li>

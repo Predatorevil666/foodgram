@@ -302,7 +302,6 @@ function App() {
             </Route>
 
             <Route exact path="/technologies">
-              <NotFound />
               {<Technologies component={Technologies}/>}
             </Route>
 

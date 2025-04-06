@@ -35,7 +35,6 @@ class User(AbstractUser):
         upload_to='avatars/',
         null=True,
         blank=True,
-        default='avatars/default_avatar.png'
     )
 
     USERNAME_FIELD = 'email'

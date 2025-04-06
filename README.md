@@ -75,6 +75,12 @@ sudo docker-compose exec backend python manage.py loaddb
 
 ### Для работы с Workflow GitHub Actions необходимо добавить в GitHub Secrets переменные окружения:
 ```
+POSTGRES_DB=<Имя базы данных, которую вы хотите использовать>
+POSTGRES_PASSWORD=<Пароль для доступа к базе данных PostgreSQL>
+POSTGRES_USER=<Имя пользователя для доступа к базе данных PostgreSQL>
+DB_HOST=<Хост базы данных, указывающий на контейнер с базой данных>
+DB_PORT=<Порт, на котором работает база данных PostgreSQL>
+
 DOCKER_PASSWORD=<пароль от DockerHub>
 DOCKER_USERNAME=<имя пользователя DockerHub>
 

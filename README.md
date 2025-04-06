@@ -130,3 +130,10 @@ TELEGRAM_TO: ID телеграм-аккаунта для отправки уве
     sudo docker compose -f docker-compose.production.yml up -d
     ```
 
+5. Выполните миграции, соберите статические файлы бэкенда и скопируйте их в /backend_static/static/:
+
+    ```bash
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
+    sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
+    sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/static/
+    ```

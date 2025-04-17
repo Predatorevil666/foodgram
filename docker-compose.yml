@@ -5,7 +5,7 @@ volumes:
 
 services:
   db:
-    image: postgres:13
+    image: postgres:13.10
     container_name: db
     env_file: .env
     volumes:
